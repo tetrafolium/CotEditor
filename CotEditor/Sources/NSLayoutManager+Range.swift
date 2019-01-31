@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2019 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -88,6 +88,23 @@ extension NSLayoutManager {
             found = true
         }
         return found
+    }
+    
+    
+    /// Check the writing direction of the character.
+    ///
+    /// - Parameter index: The character index to check.
+    /// - Returns: `true` when is right-to-left, otherwise `false`.
+    func isRTL(at index: Int) -> Bool {
+        
+        let glyphIndex = self.glyphIndexForCharacter(at: index)
+        
+        guard glyphIndex < self.numberOfGlyphs else { return false }
+        
+        var bidiLevel: UInt8 = 0
+        _ = self.getGlyphs(in: NSRange(glyphIndex..<glyphIndex+1), glyphs: nil, properties: nil, characterIndexes: nil, bidiLevels: &bidiLevel)
+        
+        return (bidiLevel % 2 == 1)
     }
     
 }
