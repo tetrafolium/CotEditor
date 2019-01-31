@@ -38,6 +38,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveLeft(sender) }
         
+        // TODO: support bidi text
         let string = self.string as NSString
         self.moveCursors(affinity: .downstream) {
             $0.isEmpty ? string.index(before: $0.lowerBound) : $0.lowerBound
@@ -50,6 +51,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveLeftAndModifySelection(sender) }
         
+        // TODO: support bidi text
         let string = self.string as NSString
         self.moveCursorsAndModifySelection(affinity: .downstream) { (range, origin) in
             if let origin = origin, origin < range.upperBound {
@@ -66,6 +68,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveRight(sender) }
         
+        // TODO: support bidi text
         let string = self.string as NSString
         self.moveCursors(affinity: .upstream) {
             $0.isEmpty ? string.index(after: $0.upperBound) : $0.upperBound
@@ -78,6 +81,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveRightAndModifySelection(sender) }
         
+        // TODO: support bidi text
         let string = self.string as NSString
         self.moveCursorsAndModifySelection(affinity: .upstream) { (range, origin) in
             if let origin = origin, origin > range.lowerBound {
@@ -145,6 +149,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveWordLeft(sender) }
         
+        // TODO: support bidi text
         self.moveCursors(affinity: .downstream) { self.textStorage!.nextWord(from: $0.lowerBound, forward: false) }
     }
     
@@ -154,6 +159,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveWordLeftAndModifySelection(sender) }
         
+        // TODO: support bidi text
         self.moveCursorsAndModifySelection(affinity: .downstream) { (range, origin) in
             if let origin = origin, origin < range.upperBound {
                 return (self.textStorage!.nextWord(from: range.upperBound, forward: false), range.lowerBound)
@@ -169,6 +175,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveWordRight(sender) }
         
+        // TODO: support bidi text
         self.moveCursors(affinity: .upstream) { self.textStorage!.nextWord(from: $0.upperBound, forward: true) }
     }
     
@@ -178,6 +185,7 @@ extension EditorTextView {
         
         guard self.hasMultipleInsertions else { return super.moveWordRightAndModifySelection(sender) }
         
+        // TODO: support bidi text
         self.moveCursorsAndModifySelection(affinity: .upstream) { (range, origin) in
             if let origin = origin, origin > range.lowerBound {
                 return (self.textStorage!.nextWord(from: range.lowerBound, forward: true), range.upperBound)
