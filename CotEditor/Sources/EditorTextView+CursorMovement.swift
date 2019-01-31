@@ -36,6 +36,7 @@ extension EditorTextView {
     ///   This rule is valid for all `move*{Left|Right}(_:)` actions.
     override func moveLeft(_ sender: Any?) {
         
+        moof(self.selectedRange.location, self.layoutManager!.isRTL(at: self.selectedRange.location))
         guard self.hasMultipleInsertions else { return super.moveLeft(sender) }
         
         // TODO: support bidi text
@@ -66,6 +67,7 @@ extension EditorTextView {
     /// move cursor forward (→)
     override func moveRight(_ sender: Any?) {
         
+        moof(self.selectedRange.location, self.layoutManager!.isRTL(at: self.selectedRange.location))
         guard self.hasMultipleInsertions else { return super.moveRight(sender) }
         
         // TODO: support bidi text
