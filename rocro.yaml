@@ -46,8 +46,6 @@ inspecode:
     options:
       --except:
       - "trailing-whitespace"   # (7886 issues)
-    machine:
-      cpu: 1.5      # default: 0.5
     thresholds:
       num-issues: 1000
 
