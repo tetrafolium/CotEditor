@@ -2,6 +2,8 @@ inspecode:
   # This repository contains Swift and HTML codes.
 
   cpd:          # supports: C C++ C# Go Java JavaScript Objective-C PHP Python Ruby Scala Swift
+    ignore:
+    - "./Tests/LineSortTests.swift"     # Lexocal error (at EMOJI) in file
     thresholds:
       num-issues: 1000
 
@@ -31,6 +33,8 @@ inspecode:
       num-issues: 1000
 
   stylelint:    # supports: CSS HTML Markdown
+    ignore:
+    - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/pgs/releasenotes.html"
     thresholds:
       num-issues: 1000
 
