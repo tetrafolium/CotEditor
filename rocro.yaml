@@ -43,6 +43,9 @@ inspecode:
       num-issues: 1000
 
   tailor:       # uspports: Swift
+    options:
+      --except:
+      - "trailing-whitespace"   # (7886 issues)
     machine:
       cpu: 1.5      # default: 0.5
     thresholds:
