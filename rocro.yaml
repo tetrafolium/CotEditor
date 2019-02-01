@@ -40,9 +40,10 @@ inspecode:
 
   swiftlint:    # supports: Swift
     auto-fix: true
-    options:
-      --enable-all-rules:
-      --format:
+    ### swiftlint finished with errors. (no log messages)
+    #options:
+    #  --enable-all-rules:
+    #  --format:
     thresholds:
       num-issues: 1000
 
