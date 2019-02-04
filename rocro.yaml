@@ -5,45 +5,47 @@ inspecode:
     ignore:
     - "./Tests/LineSortTests.swift"     # Lexocal error (at EMOJI) in file
     thresholds:
-      num-issues: 1000
+      num-issues: 3
 
   grep:         # supports: All Languages
     thresholds:
-      num-issues: 1000
+      num-issues: 2
 
   htmlhint:     # supports: HTML
     thresholds:
-      num-issues: 1000
+      num-issues: 234
 
   jscpd:        # supports: C C++ C# CoffeeScript CSS Go HTML Java JavaScript Kotlin Objective-C PHP Python Ruby Scala Swift TypeScript
     thresholds:
-      num-issues: 1000
+      num-issues: 22
 
   jshint:       # supports: JavaScript HTML
     thresholds:
-      num-issues: 1000
+      num-issues: 0   # Skipped: excluded all analyzable files by input/ignore patterns
 
   misspell:     # supports: All Languages
     thresholds:
-      num-issues: 1000
+      num-issues: 32
 
   prettier:     # supports: CSS HTML JavaScript Markdown TypeScript
     auto-fix: true
     thresholds:
-      num-issues: 1000
+      num-issues: 227
 
   stylelint:    # supports: CSS HTML Markdown
     ignore:
-    - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/pgs/releasenotes.html"
+    - "./*.md"
+    - "./CotEditor/CotEditor.help/Contents/Resources/"
+    - "./CotEditor/*.*proj/"
     thresholds:
-      num-issues: 1000
+      num-issues: 1000  # 10168 - ????
 
   swiftlint:    # supports: Swift
     auto-fix: true
-    ### swiftlint finished with errors. (no log messages)
-    #options:
-    #  --enable-all-rules:
+    options:
+      --enable-all-rules:
     #  --format:
+    ### swiftlint finished with errors. (no log messages)
     thresholds:
       num-issues: 1000
 
@@ -51,14 +53,16 @@ inspecode:
     options:
       --except:
       - "trailing-whitespace"   # (7886 issues)
+    machine:
+      cpu: 1.0
     thresholds:
-      num-issues: 1000
+      num-issues: 1000  # 240 = 8126 - 7886
 
   tidy:         # supports: HTML
     auto-fix: false
     thresholds:
-      num-issues: 1000
+      num-issues: 428
 
   unused:       # supports: C C++ C# Go HTML Java JavaScript Objective-C PHP Python Ruby Shell
     thresholds:
-      num-issues: 1000
+      num-issues: 0
