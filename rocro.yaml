@@ -54,7 +54,7 @@ inspecode:
       --except:
       - "trailing-whitespace"   # (7886 issues)
     machine:
-      cpu: 1.0
+      cpu: 0.5
     thresholds:
       num-issues: 1000  # 240 = 8126 - 7886
 
