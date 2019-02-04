@@ -58,6 +58,12 @@ inspecode:
       num-issues: 0         # with no options
 
   tailor:       # supports: Swift
+  - ignore:
+    - "./CotEditor/Sources"
+    thresholds:
+      num-issues: 999
+  - input:
+    - "./CotEditor/Sources"
     options:
       --except:
       - "trailing-whitespace"   # (7886 issues)
