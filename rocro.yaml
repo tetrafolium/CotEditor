@@ -42,30 +42,29 @@ inspecode:
 
   swiftlint:    # supports: Swift
     auto-fix: true
-    options:
-      #--enable-all-rules:  # 8066 issues detected with this option.
-      #       3432  (explicit_type_interface)
-      #       2370  (explicit_acl)
-      #        559  (conditional_returns_on_newline)
-      #        292  (explicit_top_level_acl)
-      #        289  (force_unwrapping)
-      #        228  (private_action)
-      #        116  (switch_case_on_newline)
-      #        114  (explicit_enum_raw_value)
-      #             etc.
-      --format:             # finished with errors (no log messages) with this option.
+    #options:
+    #  --enable-all-rules:  # 8066 issues detected with this option.
+    #         3432  (explicit_type_interface)
+    #         2370  (explicit_acl)
+    #          559  (conditional_returns_on_newline)
+    #          292  (explicit_top_level_acl)
+    #          289  (force_unwrapping)
+    #          228  (private_action)
+    #          116  (switch_case_on_newline)
+    #          114  (explicit_enum_raw_value)
+    #               etc.
+    #  --format:            # finished with errors (no log messages) with this option.
     thresholds:
       num-issues: 0         # with no options
 
-  #### very long execute time. ... temporary suspended
-  #tailor:       # supports: Swift
-  #  options:
-  #    --except:
-  #    - "trailing-whitespace"   # (7886 issues)
-  #  machine:
-  #    cpu: 0.5
-  #  thresholds:
-  #    num-issues: 1000  # 240 = 8126 - 7886
+  tailor:       # supports: Swift
+    options:
+      --except:
+      - "trailing-whitespace"   # (7886 issues)
+    #machine:
+    #  cpu: 0.75            # test with this setting after fix tractrix/codelift#1394
+    thresholds:
+      num-issues: 240
 
   tidy:         # supports: HTML
     auto-fix: false
