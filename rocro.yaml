@@ -20,8 +20,10 @@ inspecode:
       num-issues: 22
 
   jshint:       # supports: JavaScript HTML
+    options:
+      --extra-ext: ".html"
     thresholds:
-      num-issues: 0   # Skipped: excluded all analyzable files by input/ignore patterns
+      num-issues: 1000
 
   misspell:     # supports: All Languages
     thresholds:
