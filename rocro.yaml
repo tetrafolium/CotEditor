@@ -20,10 +20,26 @@ inspecode:
       num-issues: 22
 
   jshint:       # supports: JavaScript HTML
+  - input:
+    - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
     options:
       --extra-ext: ".html"
     thresholds:
-      num-issues: 1000
+      num-issues: 672
+  - input:
+    - "./CotEditor/CotEditor.help/"
+    ignore:
+    - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
+    options:
+      --extra-ext: ".html"
+    thresholds:
+      num-issues: 672
+  - ignore:
+    - "./CotEditor/CotEditor.help/"
+    options:
+      --extra-ext: ".html"
+    thresholds:
+      num-issues: 88
 
   misspell:     # supports: All Languages
     thresholds:
@@ -45,7 +61,8 @@ inspecode:
   swiftlint:    # supports: Swift
     auto-fix: true
     #options:
-    #  --enable-all-rules:  # 8066 issues detected with this option.
+    #  --enable-all-rules:  # detects below with this option.
+    #         8066  TOTAL
     #         3432  (explicit_type_interface)
     #         2370  (explicit_acl)
     #          559  (conditional_returns_on_newline)
@@ -60,19 +77,12 @@ inspecode:
       num-issues: 0         # with no options
 
   tailor:       # supports: Swift
-  - ignore:
-    - "./CotEditor/Sources"
-    thresholds:
-      num-issues: 999
-  - input:
-    - "./CotEditor/Sources"
     options:
       --except:
-      - "trailing-whitespace"   # (7886 issues)
-    #machine:
-    #  cpu: 0.75            # test with this setting after fix tractrix/codelift#1394
+      - "trailing-whitespace"   # too many issues
+      - "brace-style"
     thresholds:
-      num-issues: 240
+      num-issues: 142
 
   tidy:         # supports: HTML
     auto-fix: false
