@@ -77,12 +77,17 @@ inspecode:
       num-issues: 0         # with no options
 
   tailor:       # supports: Swift
-    options:
+  - options:
       --except:
       - "trailing-whitespace"   # too many issues
       - "brace-style"
     thresholds:
       num-issues: 142
+  - options:
+      --only:
+      - "brace-style"
+    thresholds:
+      num-issues: 98
 
   tidy:         # supports: HTML
     auto-fix: false
