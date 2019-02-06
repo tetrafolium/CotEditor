@@ -87,7 +87,7 @@ inspecode:
       --only:
       - "brace-style"
     thresholds:
-      num-issues: 98
+      num-issues: 146
 
   tidy:         # supports: HTML
     auto-fix: false
