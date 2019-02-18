@@ -60,7 +60,7 @@ inspecode:
 
   swiftlint:    # supports: Swift
     auto-fix: true
-    #options:
+    options:
     #  --enable-all-rules:  # detects below with this option.
     #         8066  TOTAL
     #         3432  (explicit_type_interface)
@@ -72,7 +72,7 @@ inspecode:
     #          116  (switch_case_on_newline)
     #          114  (explicit_enum_raw_value)
     #               etc.
-    #  --format:            # finished with errors (no log messages) with this option.
+      --format:            # finished with errors (no log messages) with this option.
     thresholds:
       num-issues: 0         # with no options
 
