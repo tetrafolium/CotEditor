@@ -19,7 +19,7 @@ inspecode:
     options:
       --min-lines: 10
     thresholds:
-      num-issues: 999
+      num-issues: 91
 
   jshint:       # supports: JavaScript HTML
   - input:
