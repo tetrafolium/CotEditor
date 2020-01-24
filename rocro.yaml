@@ -42,6 +42,7 @@ inspecode:
       num-issues: 88
 
   misspell:     # supports: All Languages
+    auto-fix: true
     thresholds:
       num-issues: 32
 
@@ -55,6 +56,7 @@ inspecode:
     - "./*.md"
     - "./CotEditor/CotEditor.help/Contents/Resources/"
     - "./CotEditor/*.*proj/"
+    auto-fix: true
     thresholds:
       num-issues: 19        # 10168 issues when no `ignore:`.
 
@@ -74,7 +76,7 @@ inspecode:
     #               etc.
     #  --format:            # finished with errors (no log messages) with this option.
     thresholds:
-      num-issues: 0         # with no options
+      num-issues: 1         # with no options
 
   tailor:       # supports: Swift
   - options:
