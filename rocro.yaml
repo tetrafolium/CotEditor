@@ -16,8 +16,10 @@ inspecode:
       num-issues: 234
 
   jscpd:        # supports: C C++ C# CoffeeScript CSS Go HTML Java JavaScript Kotlin Objective-C PHP Python Ruby Scala Swift TypeScript
+    options:
+      --min-lines: 10
     thresholds:
-      num-issues: 22
+      num-issues: 999
 
   jshint:       # supports: JavaScript HTML
   - input:
