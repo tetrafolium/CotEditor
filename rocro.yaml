@@ -4,54 +4,45 @@ inspecode:
   cpd:          # supports: C C++ C# Go Java JavaScript Objective-C PHP Python Ruby Scala Swift
     ignore:
     - "./Tests/LineSortTests.swift"     # Lexocal error (at EMOJI) in file
-    thresholds:
-      num-issues: 3
+    thresholds: { num-issues: 3 }
 
   grep:         # supports: All Languages
-    thresholds:
-      num-issues: 2
+    thresholds: { num-issues: 2 }
 
   htmlhint:     # supports: HTML
-    thresholds:
-      num-issues: 234
+    thresholds: { num-issues: 234 }
 
   jscpd:        # supports: C C++ C# CoffeeScript CSS Go HTML Java JavaScript Kotlin Objective-C PHP Python Ruby Scala Swift TypeScript
     options:
       --min-lines: 10
-    thresholds:
-      num-issues: 91
+    thresholds: { num-issues: 91 }
 
   jshint:       # supports: JavaScript HTML
   - input:
     - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
     options:
       --extra-ext: ".html"
-    thresholds:
-      num-issues: 672
+    thresholds: { num-issues: 672 }
   - input:
     - "./CotEditor/CotEditor.help/"
     ignore:
     - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
     options:
       --extra-ext: ".html"
-    thresholds:
-      num-issues: 672
+    thresholds: { num-issues: 672 }
   - ignore:
     - "./CotEditor/CotEditor.help/"
     options:
       --extra-ext: ".html"
-    thresholds:
-      num-issues: 88
+    thresholds: { num-issues: 88 }
 
   misspell:     # supports: All Languages
     auto-fix: true
-    thresholds:
-      num-issues: 32
+    thresholds: { num-issues: 32 }
 
   prettier:     # supports: CSS HTML JavaScript Markdown TypeScript
     auto-fix: true
-    thresholds:
-      num-issues: 227
+    thresholds: { num-issues: 227 }
 
   stylelint:    # supports: CSS HTML Markdown
     ignore:
@@ -59,8 +50,7 @@ inspecode:
     - "./CotEditor/CotEditor.help/Contents/Resources/"
     - "./CotEditor/*.*proj/"
     auto-fix: true
-    thresholds:
-      num-issues: 19        # 10168 issues when no `ignore:`.
+    thresholds: { num-issues: 19 }  # 10168 issues when no `ignore:`.
 
   swiftlint:    # supports: Swift
     auto-fix: true
@@ -77,27 +67,22 @@ inspecode:
     #          114  (explicit_enum_raw_value)
     #               etc.
     #  --format:            # finished with errors (no log messages) with this option.
-    thresholds:
-      num-issues: 1         # with no options
+    thresholds: { num-issues: 1 }
 
   tailor:       # supports: Swift
   - options:
       --except:
       - "trailing-whitespace"   # too many issues
       - "brace-style"
-    thresholds:
-      num-issues: 142
+    thresholds: { num-issues: 142 }
   - options:
       --only:
       - "brace-style"
-    thresholds:
-      num-issues: 146
+    thresholds: { num-issues: 146 }
 
   tidy:         # supports: HTML
     auto-fix: false
-    thresholds:
-      num-issues: 428
+    thresholds: { num-issues: 428 }
 
   unused:       # supports: C C++ C# Go HTML Java JavaScript Objective-C PHP Python Ruby Shell
-    thresholds:
-      num-issues: 0
+    thresholds: { num-issues: 0 }
