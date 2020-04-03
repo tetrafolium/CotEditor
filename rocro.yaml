@@ -7,7 +7,7 @@ inspecode:
     thresholds: { num-issues: 3 }
 
   fossology:
-    thresholds: { num-issues: 999 }
+    thresholds: { num-issues: 16 }
 
   grep:         # supports: All Languages
     thresholds: { num-issues: 2 }
