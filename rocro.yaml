@@ -6,6 +6,9 @@ inspecode:
     - "./Tests/LineSortTests.swift"     # Lexocal error (at EMOJI) in file
     thresholds: { num-issues: 3 }
 
+  fossology:
+    thresholds: { num-issues: 999 }
+
   grep:         # supports: All Languages
     thresholds: { num-issues: 2 }
 
