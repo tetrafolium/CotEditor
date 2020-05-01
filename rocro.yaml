@@ -73,15 +73,10 @@ inspecode:
     thresholds: { num-issues: 1 }
 
   tailor:       # supports: Swift
-  - options:
+    options:
       --except:
       - "trailing-whitespace"   # too many issues
-      - "brace-style"
-    thresholds: { num-issues: 142 }
-  - options:
-      --only:
-      - "brace-style"
-    thresholds: { num-issues: 146 }
+    thresholds: { num-issues: 288 }
 
   tidy:         # supports: HTML
     auto-fix: false
