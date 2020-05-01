@@ -76,7 +76,7 @@ inspecode:
     options:
       --except:
       - "trailing-whitespace"   # too many issues
-    thresholds: { num-issues: 288 }
+    thresholds: { num-issues: 240 }
 
   tidy:         # supports: HTML
     auto-fix: false
