@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -34,7 +34,19 @@ extension NSTextView {
     }
     
     
-    /// enumerate line fragments in area with line numbers
+    /// The 1-based line number at the given character index.
+    ///
+    /// This method has a performance advantage if the receiver's layoutManager confroms LineRangeCacheable.
+    ///
+    /// - Parameter location: NSRange-based character index.
+    /// - Returns: The number of lines (1-based).
+    func lineNumber(at location: Int) -> Int {
+        
+        return (self.layoutManager as? LineRangeCacheable)?.lineNumber(at: location) ?? (self.string as NSString).lineNumber(at: location)
+    }
+    
+    
+    /// Enumerate line fragments in area with line numbers.
     ///
     /// - Parameters:
     ///   - rect: The bounding rectangle for which to process lines.
@@ -49,8 +61,8 @@ extension NSTextView {
             let textContainer = self.textContainer
             else { return assertionFailure() }
         
-        let selectedLineRanges = (self.rangesForUserTextChange ?? self.selectedRanges)
-            .map { (self.string as NSString).lineRange(for: $0.rangeValue) }
+        let string = self.string as NSString
+        let selectedRanges = (self.rangesForUserTextChange ?? self.selectedRanges).map(\.rangeValue)
         
         // get glyph range of which line number should be drawn
         // -> Requires additionalLayout to obtain glyphRange for markedText. (2018-12 macOS 10.14 SDK)
@@ -59,15 +71,18 @@ extension NSTextView {
         
         // count up lines until the interested area
         let firstIndex = layoutManager.characterIndexForGlyph(at: glyphRangeToDraw.location)
-        var lineNumber = self.string.lineNumber(at: firstIndex)
+        var lineNumber = self.lineNumber(at: firstIndex)
         
         // enumerate visible line numbers
         var glyphIndex = glyphRangeToDraw.location
         while glyphIndex < glyphRangeToDraw.upperBound {  // process logical lines
             let characterIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
-            let lineRange = self.string.lineRange(at: characterIndex)
+            let lineRange = self.lineRange(at: characterIndex)
             let lineGlyphRange = layoutManager.glyphRange(forCharacterRange: lineRange, actualCharacterRange: nil)
-            let isSelected = selectedLineRanges.contains { $0.intersection(lineRange) != nil }
+            let isSelected = selectedRanges.contains { $0.intersects(lineRange) }
+                || (lineRange.upperBound == string.length &&
+                    lineRange.upperBound == selectedRanges.last?.upperBound &&
+                    layoutManager.extraLineFragmentRect.isEmpty)
             glyphIndex = lineGlyphRange.upperBound
             
             var wrappedLineGlyphIndex = max(lineGlyphRange.location, glyphRangeToDraw.lowerBound)
@@ -83,19 +98,31 @@ extension NSTextView {
             lineNumber += 1
         }
         
-        guard includingExtraLine else { return }
-        
-        let extraLineRect = layoutManager.extraLineFragmentRect
-        
         guard
-            !extraLineRect.isEmpty,
-            (layoutRect.minY...layoutRect.maxY).overlaps(extraLineRect.minY...extraLineRect.maxY)
+            includingExtraLine,
+            (!layoutManager.isValidGlyphIndex(glyphRangeToDraw.upperBound) || lineNumber == 1),
+            layoutManager.extraLineFragmentTextContainer != nil
             else { return }
         
-        let lastLineNumber = max(self.string.numberOfLines(includingLastLineEnding: true), 1)
-        let isSelected = (selectedLineRanges.last?.location == (self.string as NSString).length)
+        let lastLineNumber = (lineNumber > 1) ? lineNumber : self.lineNumber(at: string.length)
+        let isSelected = (selectedRanges.last?.location == string.length)
         
-        body(.new(lastLineNumber, isSelected), extraLineRect)
+        body(.new(lastLineNumber, isSelected), layoutManager.extraLineFragmentRect)
+    }
+    
+    
+    
+    // MARK: Private Methods
+    
+    /// The 1-based line number at the given character index.
+    ///
+    /// This method has a performance advantage if the receiver's layoutManager confroms LineRangeCacheable.
+    ///
+    /// - Parameter location: NSRange-based character index.
+    /// - Returns: The number of lines (1-based).
+    private func lineRange(at location: Int) -> NSRange {
+        
+        return (self.layoutManager as? LineRangeCacheable)?.lineRange(at: location) ?? (self.string as NSString).lineRange(at: location)
     }
     
 }

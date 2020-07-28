@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -51,45 +51,40 @@ final class FileDropComposer {
         case fileExtensionLowercase = "FILEEXTENSION-LOWER"
         case fileExtensionUppercase = "FILEEXTENSION-UPPER"
         case directory = "DIRECTORY"
+        case fileContent = "FILECONTENT"
         case imageWidth = "IMAGEWIDTH"
         case imageHeight = "IMAGEHEIGHT"
         
         static let pathTokens: [Token] = [.absolutePath, .relativePath, .filename, .filenameWithoutExtension, .fileExtension, .fileExtensionLowercase, .fileExtensionUppercase, .directory]
+        static let textTokens: [Token] = [.fileContent]
         static let imageTokens: [Token] = [.imageWidth, .imageHeight]
         
         
         var description: String {
             
             switch self {
-            case .absolutePath:
-                return "The dropped file absolute path."
-                
-            case .relativePath:
-                return "The relative path between dropped file and the document."
-                
-            case .filename:
-                return "The dropped file’s name including extension (if exists)."
-                
-            case .filenameWithoutExtension:
-                return "The dropped file’s name without extension."
-                
-            case .fileExtension:
-                return "The dropped file’s extension."
-                
-            case .fileExtensionLowercase:
-                return "The dropped file’s extension (converted to lowercase)."
-                
-            case .fileExtensionUppercase:
-                return "The dropped file’s extension (converted to uppercase)."
-                
-            case .directory:
-                return "The parent directory name of dropped file."
-                
-            case .imageWidth:
-                return "(If the dropped file is an image) image width."
-                
-            case .imageHeight:
-                return "(If the dropped file is an image) image height."
+                case .absolutePath:
+                    return "The dropped file absolute path."
+                case .relativePath:
+                    return "The relative path between the dropped file and the document."
+                case .filename:
+                    return "The dropped file’s name including extension (if exists)."
+                case .filenameWithoutExtension:
+                    return "The dropped file’s name without extension."
+                case .fileExtension:
+                    return "The dropped file’s extension."
+                case .fileExtensionLowercase:
+                    return "The dropped file’s extension (converted to lowercase)."
+                case .fileExtensionUppercase:
+                    return "The dropped file’s extension (converted to uppercase)."
+                case .directory:
+                    return "The parent directory name of dropped file."
+                case .fileContent:
+                    return "(If the dropped file is a text file) file content."
+                case .imageWidth:
+                    return "(If the dropped file is an image) image width."
+                case .imageHeight:
+                    return "(If the dropped file is an image) image height."
             }
         }
         
@@ -137,7 +132,7 @@ final class FileDropComposer {
             .replacingOccurrences(of: Token.directory.token, with: droppedFileURL.deletingLastPathComponent().lastPathComponent)
         
         // get image dimension if needed
-        //   -> Use NSImageRep because NSImage's `size` returns a DPI applied size.
+        // -> Use NSImageRep because NSImage's `size` returns a DPI applied size.
         if template.contains(Token.imageWidth.token) || template.contains(Token.imageHeight.token) {
             var imageRep: NSImageRep?
             NSFileCoordinator().coordinate(readingItemAt: droppedFileURL, options: [.withoutChanges, .resolvesSymbolicLink], error: nil) { (newURL: URL) in
@@ -148,6 +143,13 @@ final class FileDropComposer {
                     .replacingOccurrences(of: Token.imageWidth.token, with: String(imageRep.pixelsWide))
                     .replacingOccurrences(of: Token.imageHeight.token, with: String(imageRep.pixelsHigh))
             }
+        }
+        
+        // get text content if needed
+        // -> Replace this at last because the file content can contain other tokens.
+        if template.contains(Token.fileContent.token) {
+            let content = try? String(contentsOf: droppedFileURL)
+            dropText = dropText.replacingOccurrences(of: Token.fileContent.token, with: content ?? "")
         }
         
         return dropText

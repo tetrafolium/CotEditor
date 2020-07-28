@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -64,16 +64,16 @@ final class RegularExpressionFormatter: Formatter {
         if self.parsesRegularExpression {
             // validate regex pattern
             switch self.mode {
-            case .search:
-                do {
-                    _ = try NSRegularExpression(pattern: string)
-                } catch {
-                    if self.showsError {
-                        attributedString.replaceCharacters(in: NSRange(..<0), with: "⚠️ ")
-                    }
-                    return attributedString
+                case .search:
+                    do {
+                        _ = try NSRegularExpression(pattern: string)
+                    } catch {
+                        if self.showsError {
+                            attributedString.replaceCharacters(in: NSRange(..<0), with: "⚠️ ")
+                        }
+                        return attributedString
                 }
-            case .replacement: break
+                case .replacement: break
             }
             
             // syntax highlight
@@ -93,8 +93,8 @@ final class RegularExpressionFormatter: Formatter {
                     self.invisibles.contains(invisible)
                     else { continue }
                 
-                let attributedInvisible = NSAttributedString(string: invisible.usedSymbol, attributes: attributes)
-                attributedString.replaceCharacters(in: NSRange(index...index), with: attributedInvisible)
+                let attributedInvisible = NSAttributedString(string: String(invisible.symbol), attributes: attributes)
+                attributedString.replaceCharacters(in: NSRange(location: index, length: 1), with: attributedInvisible)
             }
         }
         

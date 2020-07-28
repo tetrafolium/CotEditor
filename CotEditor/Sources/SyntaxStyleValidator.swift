@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -69,14 +69,14 @@ final class SyntaxStyleValidator {
         @objc var failureReason: String? {
             
             switch self.kind {
-            case .duplicated:
-                return "The same word is registered multiple times.".localized
+                case .duplicated:
+                    return "The same word is registered multiple times.".localized
                 
-            case .regularExpression(let error):
-                return "Regular Expression: ".localized + error.localizedDescription
-            
-            case .blockComment:
-                return "Block comment needs both begin delimiter and end delimiter.".localized
+                case .regularExpression(let error):
+                    return "Regular Expression: ".localized + error.localizedDescription
+                
+                case .blockComment:
+                    return "Block comment needs both begin delimiter and end delimiter.".localized
             }
         }
         
@@ -90,18 +90,19 @@ final class SyntaxStyleValidator {
         @objc var localizedRole: String? {
             
             switch self.role {
-            case .begin:
-                return "Begin string".localized
+                case .begin:
+                    return "Begin string".localized
                 
-            case .end:
-                return "End string".localized
+                case .end:
+                    return "End string".localized
                 
-            case .regularExpression:
-                return nil
+                case .regularExpression:
+                    return nil
             }
         }
         
     }
+    
     
     
     // MARK: -
@@ -118,16 +119,13 @@ final class SyntaxStyleValidator {
         
         var results = [StyleError]()
         
-        let syntaxDictKeys = SyntaxType.allCases.map { $0.rawValue } + [SyntaxKey.outlineMenu.rawValue]
-        
-        var lastBeginString: String?
-        var lastEndString: String?
+        let syntaxDictKeys = SyntaxType.allCases.map(\.rawValue) + [SyntaxKey.outlineMenu.rawValue]
         
         for key in syntaxDictKeys {
             guard let dictionaries = styleDictionary[key] as? [[String: Any]] else { continue }
             
             let definitions = dictionaries
-                .compactMap { HighlightDefinition(dictionary: $0) }
+                .compactMap { try? HighlightDefinition(dictionary: $0) }
                 .sorted {
                     // sort for duplication check
                     guard $0.beginString == $1.beginString else {
@@ -140,20 +138,25 @@ final class SyntaxStyleValidator {
                     return endString0 < endString1
                 }
             
+            // allow appearing the same definitions in different kinds
+            var lastDefinition: HighlightDefinition?
+            
             for definition in definitions {
                 defer {
-                    lastBeginString = definition.beginString
-                    lastEndString = definition.endString
+                    lastDefinition = definition
                 }
                 
-                guard definition.beginString != lastBeginString || definition.endString != lastEndString else {
-                    results.append(StyleError(kind: .duplicated,
-                                              type: key,
-                                              role: .begin,
-                                              string: definition.beginString))
-                    
-                    continue
-                }
+                guard
+                    definition.beginString != lastDefinition?.beginString ||
+                    definition.endString != lastDefinition?.endString
+                    else {
+                        results.append(StyleError(kind: .duplicated,
+                                                  type: key,
+                                                  role: .begin,
+                                                  string: definition.beginString))
+                        
+                        continue
+                    }
                 
                 if definition.isRegularExpression {
                     do {

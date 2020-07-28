@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -24,42 +24,45 @@
 //
 
 import AppKit.NSColor
+import AppKit.NSAppearance
 
 extension NSColor {
     
     static let textHighlighterColor = NSColor(calibratedHue: 0.24, saturation: 0.8, brightness: 0.8, alpha: 0.4)
     static let alternateDisabledControlTextColor = NSColor(white: 1.0, alpha: 0.75)
 }
-    
+
+
 
 extension NSColor {
     
-    /// return well distributed colors to highlight text
-    static func textHighlighterColors(count: Int) -> [NSColor] {
+    /// Return CGColor of the receiver by converting system color correctly for the specific appearance.
+    ///
+    /// - Parameter appearance: The appearance to get the corresponding system color.
+    /// - Returns: A CGColor instance.
+    func cgColor(for appearance: NSAppearance) -> CGColor {
         
-        return NSColor.textHighlighterColor.decomposite(into: count)
+        guard NSAppearance.current != appearance else { return self.cgColor }
+        
+        let currentAppearance = NSAppearance.current
+        NSAppearance.current = appearance
+        let cgColor = self.cgColor
+        NSAppearance.current = currentAppearance
+        
+        return cgColor
     }
     
     
-    
-    // MARK: Private Methods
-    
-    /// create desired number of colors from itself
-    private func decomposite(into number: Int) -> [NSColor] {
+    /// Create desired number of well distributed colors from the receiver.
+    ///
+    /// - Parameter number: The required number of colors.
+    /// - Returns: An array of created colors.
+    func decomposite(into number: Int) -> [NSColor] {
         
-        guard number > 0 else { return [] }
-        
-        let baseHue = self.hueComponent
-        let saturation = self.saturationComponent
-        let brightness = self.brightnessComponent
-        let alpha = self.alphaComponent
-        
-        return (0..<number).map { index in
-            let advance = CGFloat(index) / CGFloat(number)
-            let (_, hue) = modf(baseHue + advance)
-            
-            return NSColor(calibratedHue: hue, saturation: saturation, brightness: brightness, alpha: alpha)
-        }
+        return (0..<number)
+            .map { CGFloat($0) / CGFloat(number) }
+            .map { modf(self.hueComponent + $0).1 }
+            .map { NSColor(calibratedHue: $0, saturation: self.saturationComponent, brightness: self.brightnessComponent, alpha: self.alphaComponent) }
     }
     
 }

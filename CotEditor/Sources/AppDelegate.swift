@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2013-2019 1024jp
+//  © 2013-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: Enums
     
     private enum AppWebURL: String {
+        
         case website = "https://coteditor.com"
         case issueTracker = "https://github.com/coteditor/CotEditor/issues"
         
@@ -78,7 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
         
         // register default setting values
-        let defaults = DefaultSettings.defaults.mapKeys { $0.rawValue }
+        let defaults = DefaultSettings.defaults.mapKeys(\.rawValue)
         UserDefaults.standard.register(defaults: defaults)
         NSUserDefaultsController.shared.initialValues = defaults
         
@@ -87,9 +88,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // wake text finder up
         _ = TextFinder.shared
-        
-        // register transformers
-        ValueTransformer.setValueTransformer(HexColorTransformer(), forName: HexColorTransformer.name)
         
         super.init()
     }
@@ -119,11 +117,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.buildThemeMenu()
         ScriptManager.shared.buildScriptMenu()
         
-        // manually insert Share menu on macOS 10.12 and earlier
-        if NSAppKitVersion.current < .macOS10_13 {
-            (DocumentController.shared as? DocumentController)?.insertLegacyShareMenu()
-        }
-        
         // observe setting list updates
         NotificationCenter.default.addObserver(self, selector: #selector(buildEncodingMenu), name: didUpdateSettingListNotification, object: EncodingManager.shared)
         NotificationCenter.default.addObserver(self, selector: #selector(buildSyntaxMenu), name: didUpdateSettingListNotification, object: SyntaxManager.shared)
@@ -134,10 +127,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: Application Delegate
     
-    #if !APPSTORE
+    #if SPARKLE
     /// setup Sparkle framework
     func applicationWillFinishLaunching(_ notification: Notification) {
-    
+        
         UpdaterManager.shared.setup()
     }
     #endif
@@ -161,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         
         // store the latest version
-        //   -> The bundle version (build number) must be Int.
+        // -> The bundle version (build number) must be Int.
         let thisVersion = Bundle.main.bundleVersion
         let isLatest: Bool = {
             guard
@@ -181,13 +174,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         
         switch UserDefaults.standard[.noDocumentOnLaunchBehavior] {
-        case .untitledDocument:
-            return true
-        case .openPanel:
-            NSDocumentController.shared.openDocument(nil)
-            return false
-        case .none:
-            return false
+            case .untitledDocument:
+                return true
+            case .openPanel:
+                NSDocumentController.shared.openDocument(nil)
+                return false
+            case .none:
+                return false
         }
     }
     
@@ -301,24 +294,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     /// show standard about panel
     @IBAction func showAboutPanel(_ sender: Any?) {
-     
+        
         let creditsURL = Bundle.main.url(forResource: "Credits", withExtension: "html")!
         var html = try! String(contentsOf: creditsURL)
         
-        #if APPSTORE  // Remove Sparkle from 3rd party code list
+        #if !SPARKLE  // Remove Sparkle from 3rd party code list
         if let range = html.range(of: "Sparkle") {
-            html = html.replacingCharacters(in: html.lineRange(for: range), with: "")
+            html.replaceSubrange(html.lineRange(for: range), with: "")
         }
         #endif
         
-        // inverse text color in dark mode
-        if #available(macOS 10.14, *), NSApp.effectiveAppearance.isDark {
-            html = html.replacingOccurrences(of: "<body>", with: "<body style=\"color: white\">")
+        // backward compatibility for macOS 10.14 that does not support `-apple-system*` colors (macOS 10.15)
+        if NSAppKitVersion.current < .macOS10_15, #available(macOS 10.14, *), NSApp.effectiveAppearance.isDark {
+            html = html.replacingOccurrences(of: "<body>", with: "<body style=\"color: hsla(0,0%,100%,.85)\">")
+            html = html.replacingOccurrences(of: "<h2>", with: "<h2 style=\"color: hsla(0,0%,100%,.55)\">")
         }
         
         let attrString = NSAttributedString(html: html.data(using: .utf8)!, baseURL: creditsURL, documentAttributes: nil)!
-        let creditsKey = NSApplication.AboutPanelOptionKey(rawValue: "Credits")  // macOS 10.13
-        NSApplication.shared.orderFrontStandardAboutPanel(options: [creditsKey: attrString])
+        NSApplication.shared.orderFrontStandardAboutPanel(options: [.credits: attrString])
     }
     
     
@@ -380,8 +373,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @IBAction func createBugReport(_ sender: Any?) {
         
         // load template file
-        let url = Bundle.main.url(forResource: "ReportTemplate", withExtension: "md")!
-        guard let template = try? String(contentsOf: url) else { return assertionFailure() }
+        guard
+            let url = Bundle.main.url(forResource: "ReportTemplate", withExtension: "md"),
+            let template = try? String(contentsOf: url)
+            else { return assertionFailure() }
         
         // fill template with user environment info
         let report = template
@@ -390,9 +385,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .replacingOccurrences(of: "%SYSTEM_VERSION%", with: ProcessInfo.processInfo.operatingSystemVersionString)
         
         // open as document
-        guard let document = (try? NSDocumentController.shared.openUntitledDocumentAndDisplay(false)) as? Document else { return assertionFailure() }
-        document.displayName = "Bug Report".localized(comment: "document title")
-        document.textStorage.replaceCharacters(in: NSRange(location: 0, length: 0), with: report)
+        guard let document = try? NSDocumentController.shared.openUntitledDocumentAndDisplay(false) as? Document else { return assertionFailure() }
+        document.displayName = "Issue Report".localized(comment: "document title")
+        document.textStorage.replaceCharacters(in: NSRange(0..<0), with: report)
         document.setSyntaxStyle(name: BundledStyleName.markdown)
         document.makeWindowControllers()
         document.showWindows()
@@ -438,7 +433,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     
     /// build theme menu in the main menu
-     @objc private func buildThemeMenu() {
+    @objc private func buildThemeMenu() {
         
         let menu = self.themesMenu!
         

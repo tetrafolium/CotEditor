@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2019 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ final class PreferencesWindow: NSPanel {
     override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         
         switch menuItem.action {
-        case #selector(toggleToolbarShown)?:
-            return false
+            case #selector(toggleToolbarShown):
+                return false
             
-        default:
-            return super.validateMenuItem(menuItem)
+            default:
+                return super.validateMenuItem(menuItem)
         }
     }
     

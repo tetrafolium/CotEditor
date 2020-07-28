@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -46,10 +46,10 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
             
             let style: SyntaxManager.StyleDictionary = {
                 switch mode {
-                case .edit(let name), .copy(let name):
-                    return manager.settingDictionary(name: name) ?? manager.blankSettingDictionary
-                case .new:
-                    return manager.blankSettingDictionary
+                    case .edit(let name), .copy(let name):
+                        return manager.settingDictionary(name: name) ?? manager.blankSettingDictionary
+                    case .new:
+                        return manager.blankSettingDictionary
                 }
             }()
             self.style.setDictionary(style)
@@ -89,7 +89,7 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
         
         if let destinationController = segue.destinationController as? NSTabViewController {
             self.tabViewController = destinationController
-            self.menuTitles = destinationController.tabViewItems.map { $0.label.localized }
+            self.menuTitles = destinationController.tabViewItems.map(\.label.localized)
             destinationController.children.forEach { $0.representedObject = self.style }
         }
     }
@@ -103,9 +103,9 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
         // setup style name field
         self.styleNameField?.stringValue = {
             switch self.mode {
-            case .edit(let name): return name
-            case .copy(let name): return SyntaxManager.shared.savableSettingName(for: name, appendingCopySuffix: true)
-            case .new: return ""
+                case .edit(let name): return name
+                case .copy(let name): return SyntaxManager.shared.savableSettingName(for: name, appendingCopySuffix: true)
+                case .new: return ""
             }
         }()
         if self.isBundledStyle {
@@ -170,7 +170,7 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
             case .edit(let name) = self.mode,
             let style = SyntaxManager.shared.bundledSettingDictionary(name: name)
             else { return }
-
+        
         self.style.setDictionary(style)
         
         // update validation result if displayed
@@ -184,10 +184,8 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
         guard
             let metadata = self.style[DictionaryKey.metadata.rawValue] as? [String: Any],
             let urlString = metadata[MetadataKey.distributionURL.rawValue] as? String,
-            let url = URL(string: urlString) else {
-                NSSound.beep()
-                return
-        }
+            let url = URL(string: urlString)
+            else { return NSSound.beep() }
         
         NSWorkspace.shared.open(url)
     }
@@ -215,23 +213,20 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
         guard SyntaxStyleValidator.validate(self.style as! SyntaxManager.StyleDictionary).isEmpty else {
             // show "Validation" pane
             let index = self.tabViewController!.tabViewItems.firstIndex { ($0.identifier as? String) == "validation" }!
-            self.menuTableView?.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+            self.menuTableView?.selectRowIndexes([index], byExtendingSelection: false)
             NSSound.beep()
             return
         }
         
         // NSMutableDictonary to StyleDictionary
-        let style = self.style
-        var styleDictionary = SyntaxManager.StyleDictionary()
-        for case let (key as String, value) in style {
-            styleDictionary[key] = value
+        let styleDictionary: SyntaxManager.StyleDictionary = self.style.reduce(into: [:]) { (dictionary, item) in
+            guard let key = item.key as? String else { return assertionFailure() }
+            dictionary[key] = item.value
         }
         
         let oldName: String? = {
-            switch self.mode {
-            case .edit(let name): return name
-            default: return nil
-            }
+            guard case .edit(let name) = self.mode else { return nil }
+            return name
         }()
         
         do {
@@ -259,10 +254,8 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
         if case .edit(let name) = self.mode, (styleName.caseInsensitiveCompare(name) == .orderedSame) { return true }
         
         let originalName: String? = {
-            switch self.mode {
-            case .edit(let name): return name
-            default: return nil
-            }
+            guard case .edit(let name) = self.mode else { return nil }
+            return name
         }()
         
         do {

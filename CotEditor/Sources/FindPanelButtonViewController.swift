@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -36,14 +36,6 @@ final class FindPanelButtonViewController: NSViewController {
     
     
     // MARK: -
-    // MARK: Lifecycle
-    
-    deinit {
-        self.findNextAfterReplaceObserver?.invalidate()
-    }
-    
-    
-    
     // MARK: View Controller Methods
     
     /// setup UI
@@ -54,6 +46,7 @@ final class FindPanelButtonViewController: NSViewController {
         self.invalidateReplaceButtonBehavior()
         
         // observe default change for the "Replace" button tooltip
+        self.findNextAfterReplaceObserver?.invalidate()
         self.findNextAfterReplaceObserver = UserDefaults.standard.observe(key: .findNextAfterReplace) { [unowned self] _ in
             self.invalidateReplaceButtonBehavior()
         }
@@ -79,12 +72,12 @@ final class FindPanelButtonViewController: NSViewController {
     @IBAction func clickSegmentedFindButton(_ sender: NSSegmentedControl) {
         
         switch sender.selectedSegment {
-        case 0:
-            TextFinder.shared.findPrevious(sender)
-        case 1:
-            TextFinder.shared.findNext(sender)
-        default:
-            assertionFailure("Number of the find button segments must be 2.")
+            case 0:
+                TextFinder.shared.findPrevious(sender)
+            case 1:
+                TextFinder.shared.findNext(sender)
+            default:
+                assertionFailure("Number of the find button segments must be 2.")
         }
     }
     

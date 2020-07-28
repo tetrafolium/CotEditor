@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2017-2018 1024jp
+//  © 2017-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -46,8 +46,7 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         self.mainViewController?.delegate = self
         
         // register droppable types
-        let draggedType = NSPasteboard.PasteboardType(kUTTypeFileURL as String)
-        self.tableView?.registerForDraggedTypes([draggedType])
+        self.tableView?.registerForDraggedTypes([.fileURL])
         
         self.settingNames = ReplacementManager.shared.settingNames
         
@@ -68,8 +67,8 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
                 else { return 0 }
             
             return row
-            }()
-        self.tableView?.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        }()
+        self.tableView?.selectRowIndexes([row], byExtendingSelection: false)
         
         // observe replacement setting list change
         NotificationCenter.default.addObserver(self, selector: #selector(setupList), name: didUpdateSettingListNotification, object: ReplacementManager.shared)
@@ -97,40 +96,42 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         
         let itemSelected = (representedSettingName != nil)
         
-        guard let action = menuItem.action else { return false }
-        
         // append target setting name to menu titles
-        switch action {
-        case #selector(addSetting), #selector(importSetting(_:)):
-            menuItem.isHidden = (isContextualMenu && itemSelected)
+        switch menuItem.action {
+            case #selector(addSetting), #selector(importSetting(_:)):
+                menuItem.isHidden = (isContextualMenu && itemSelected)
             
-        case #selector(renameSetting(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Rename “%@”".localized, name)
+            case #selector(renameSetting(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Rename “%@”".localized, name)
+                }
+                menuItem.isHidden = !itemSelected
+            
+            case #selector(duplicateSetting(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Duplicate “%@”".localized, name)
+                }
+                menuItem.isHidden = !itemSelected
+            
+            case #selector(deleteSetting(_:)):
+                menuItem.isHidden = !itemSelected
+            
+            case #selector(exportSetting(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Export “%@”…".localized, name)
+                }
+                menuItem.isHidden = !itemSelected
+            
+            case #selector(revealSettingInFinder(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Reveal “%@” in Finder".localized, name)
             }
-            menuItem.isHidden = !itemSelected
             
-        case #selector(duplicateSetting(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Duplicate “%@”".localized, name)
-            }
-            menuItem.isHidden = !itemSelected
+            case nil:
+                return false
             
-        case #selector(deleteSetting(_:)):
-            menuItem.isHidden = !itemSelected
-            
-        case #selector(exportSetting(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Export “%@”…".localized, name)
-            }
-            menuItem.isHidden = !itemSelected
-            
-        case #selector(revealSettingInFinder(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Reveal “%@” in Finder".localized, name)
-            }
-            
-        default: break
+            default:
+                break
         }
         
         return true
@@ -146,9 +147,9 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         guard let tableView = self.tableView else { return }
         
         try? ReplacementManager.shared.createUntitledSetting { (settingName: String) in
-            let row = ReplacementManager.shared.settingNames.index(of: settingName) ?? 0
+            let row = ReplacementManager.shared.settingNames.firstIndex(of: settingName) ?? 0
             
-            tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+            tableView.selectRowIndexes([row], byExtendingSelection: false)
         }
     }
     
@@ -171,7 +172,7 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         
         guard
             let settingName = self.targetSettingName(for: sender),
-            let row = self.settingNames.index(of: settingName)
+            let row = self.settingNames.firstIndex(of: settingName)
             else { return }
         
         self.tableView?.editColumn(0, row: row, with: nil, select: false)
@@ -191,7 +192,7 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
     @IBAction func exportSetting(_ sender: Any?) {
         
         guard let settingName = self.targetSettingName(for: sender) else { return }
-       
+        
         let savePanel = NSSavePanel()
         savePanel.canCreateDirectories = true
         savePanel.canSelectHiddenExtension = true
@@ -199,7 +200,7 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         savePanel.nameFieldStringValue = settingName
         savePanel.allowedFileTypes = ReplacementManager.shared.filePathExtensions
         
-        savePanel.beginSheetModal(for: self.view.window!) { (result: NSApplication.ModalResponse) in
+        savePanel.beginSheetModal(for: self.view.window!) { [unowned self] (result: NSApplication.ModalResponse) in
             guard result == .OK else { return }
             
             do {
@@ -280,7 +281,7 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         alert.addButton(withTitle: "Delete".localized)
         
         let window = self.view.window!
-        alert.beginSheetModal(for: window) { (returnCode: NSApplication.ModalResponse) in
+        alert.beginSheetModal(for: window) { [unowned self] (returnCode: NSApplication.ModalResponse) in
             guard returnCode == .alertSecondButtonReturn else { return }  // cancelled
             
             do {
@@ -325,9 +326,9 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         self.tableView?.reloadData()
         
         if let settingName = settingName,
-            let row = self.settingNames.index(of: settingName)
+            let row = self.settingNames.firstIndex(of: settingName)
         {
-            self.tableView?.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+            self.tableView?.selectRowIndexes([row], byExtendingSelection: false)
         }
     }
     
@@ -429,7 +430,7 @@ extension MultipleReplacementListViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
         
         // save the unsaved change before the selection changes
-        _ = self.mainViewController?.commitEditing()
+        self.mainViewController?.commitEditing()
         
         return true
     }

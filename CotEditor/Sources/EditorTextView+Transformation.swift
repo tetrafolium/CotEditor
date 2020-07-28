@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ extension EditorTextView {
     @IBAction func exchangeFullwidthRoman(_ sender: Any?) {
         
         self.transformSelection(actionName: "To Full-width Roman".localized) {
-            $0.fullWidthRoman
+            $0.fullwidthRoman()
         }
     }
     
@@ -84,7 +84,7 @@ extension EditorTextView {
     @IBAction func exchangeHalfwidthRoman(_ sender: Any?) {
         
         self.transformSelection(actionName: "To Half-width Roman".localized) {
-            $0.halfWidthRoman
+            $0.fullwidthRoman(reverse: true)
         }
     }
     
@@ -172,6 +172,19 @@ extension EditorTextView {
         }
     }
     
+    
+    
+    // MARK: Action Messages (Smart Quotes)
+    
+    /// Straighten all curly quotes.
+    @IBAction func straightenQuotesInSelection(_ sender: Any?) {
+        
+        self.transformSelection {
+            $0.replacingOccurrences(of: "[“”‟„]", with: "\"", options: .regularExpression)
+              .replacingOccurrences(of: "[‘’‛‚]", with: "'", options: .regularExpression)
+        }
+    }
+    
 }
 
 
@@ -184,20 +197,20 @@ private extension NSTextView {
     func transformSelection(actionName: String? = nil, block: (String) -> String) {
         
         // transform the word that contains the cursor if nothing is selected
-        if self.selectedRange.length == 0 {
+        if self.selectedRange.isEmpty {
             self.selectWord(self)
         }
         
-        let selectedRanges = self.selectedRanges as! [NSRange]
+        let selectedRanges = self.selectedRanges.map(\.rangeValue)
         var strings = [String]()
         var appliedRanges = [NSRange]()
         var newSelectedRanges = [NSRange]()
         var deltaLocation = 0
         
-        for range in selectedRanges where range.length > 0 {
+        for range in selectedRanges where !range.isEmpty {
             let substring = (self.string as NSString).substring(with: range)
             let string = block(substring)
-            let newRange = NSRange(location: range.location - deltaLocation, length: string.utf16.count)
+            let newRange = NSRange(location: range.location - deltaLocation, length: string.length)
             
             strings.append(string)
             appliedRanges.append(range)

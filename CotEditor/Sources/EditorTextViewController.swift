@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -32,17 +32,6 @@ final class EditorTextViewController: NSViewController, NSTextViewDelegate {
     
     @IBOutlet private(set) weak var textView: EditorTextView?
     
-    var showsLineNumber: Bool {
-        
-        get {
-            return !(self.lineNumberView?.isHidden ?? true)
-        }
-        
-        set {
-            self.lineNumberView?.isHidden = !newValue
-        }
-    }
-    
     
     // MARK: Private Properties
     
@@ -60,22 +49,34 @@ final class EditorTextViewController: NSViewController, NSTextViewDelegate {
     }
     
     
-    override func viewDidLoad() {
+    override func viewWillAppear() {
         
-        super.viewDidLoad()
+        super.viewWillAppear()
         
         // observe text orientation for line number view
-        self.orientationObserver = self.textView!.observe(\.layoutOrientation, options: .initial) { [unowned self] (textView, _) in
+        self.orientationObserver?.invalidate()
+        self.orientationObserver = self.textView!.observe(\.layoutOrientation, options: .initial) { [weak self] (textView, _) in
+            guard let self = self else { return assertionFailure() }
             
-            switch textView.layoutOrientation {
-            case .horizontal:
-                self.stackView?.orientation = .horizontal
-            case .vertical:
-                self.stackView?.orientation = .vertical
-            }
+            self.stackView?.orientation = {
+                switch textView.layoutOrientation {
+                    case .horizontal: return .horizontal
+                    case .vertical: return .vertical
+                    @unknown default: fatalError()
+                }
+            }()
             
             self.lineNumberView?.orientation = textView.layoutOrientation
         }
+    }
+    
+    
+    override func viewDidDisappear() {
+        
+        super.viewDidDisappear()
+        
+        self.orientationObserver?.invalidate()
+        self.orientationObserver = nil
     }
     
     
@@ -86,7 +87,7 @@ final class EditorTextViewController: NSViewController, NSTextViewDelegate {
     func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
         
         // standardize line endings to LF
-        // -> Line endings replacemement on file read is processed in `Document.read(from:ofType:)`
+        // -> Line endings replacement on file read is processed in `Document.read(from:ofType:).
         if let replacementString = replacementString,  // = only attributes changed
             !replacementString.isEmpty,  // = text deleted
             textView.undoManager?.isUndoing != true,  // = undo
@@ -124,10 +125,36 @@ final class EditorTextViewController: NSViewController, NSTextViewDelegate {
     /// show Go To sheet
     @IBAction func gotoLocation(_ sender: Any?) {
         
+        guard let textView = self.textView else { return assertionFailure() }
+        
         let viewController = GoToLineViewController.instantiate(storyboard: "GoToLineView")
-        viewController.textView = self.textView
+        
+        let string = textView.string
+        let lineNumber = string.lineNumber(at: textView.selectedRange.location)
+        let lineCount = (string as NSString).substring(with: textView.selectedRange).numberOfLines
+        viewController.lineRange = FuzzyRange(location: lineNumber, length: lineCount)
+        
+        viewController.completionHandler = { (lineRange) in
+            guard let range = textView.string.rangeForLine(in: lineRange) else { return false }
+            
+            textView.selectedRange = range
+            textView.scrollRangeToVisible(range)
+            textView.showFindIndicator(for: range)
+            
+            return true
+        }
         
         self.presentAsSheet(viewController)
+    }
+    
+    
+    
+    // MARK: Public Methods
+    
+    var showsLineNumber: Bool {
+        
+        get { self.lineNumberView?.isHidden == false }
+        set { self.lineNumberView?.isHidden = !newValue }
     }
     
     
@@ -138,6 +165,20 @@ final class EditorTextViewController: NSViewController, NSTextViewDelegate {
     private var stackView: NSStackView? {
         
         return self.view as? NSStackView
+    }
+    
+}
+
+
+
+extension EditorTextViewController: NSFontChanging {
+    
+    // MARK: Font Changing Methods
+    
+    /// restrict items in the font panel toolbar
+    func validModesForFontPanel(_ fontPanel: NSFontPanel) -> NSFontPanel.ModeMask {
+        
+        return [.collection, .face, .size]
     }
     
 }

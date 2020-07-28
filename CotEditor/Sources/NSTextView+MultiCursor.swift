@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018-2019 1024jp
+//  © 2018-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 
 import Cocoa
 
-protocol MultiCursorEditing: AnyObject {
+protocol MultiCursorEditing: NSTextView {
     
     var insertionLocations: [Int] { get set }
     var selectionOrigins: [Int] { get set }
@@ -36,7 +36,7 @@ protocol MultiCursorEditing: AnyObject {
 }
 
 
-extension MultiCursorEditing where Self: NSTextView {
+extension MultiCursorEditing {
     
     /// Whether the receiver has multiple points to insert text.
     var hasMultipleInsertions: Bool {
@@ -48,8 +48,10 @@ extension MultiCursorEditing where Self: NSTextView {
     /// All ranges to insert for multiple-cursor editing.
     var insertionRanges: [NSRange] {
         
+        let selectedRanges = self.selectedRanges.map(\.rangeValue)
         let insertionRanges = self.insertionLocations.map { NSRange(location: $0, length: 0) }
-        return ((self.selectedRanges as! [NSRange]) + insertionRanges).sorted { $0.location < $1.location }
+        
+        return (selectedRanges + insertionRanges).sorted(\.location)
     }
     
     
@@ -77,16 +79,14 @@ extension MultiCursorEditing where Self: NSTextView {
         
         guard self.shouldChangeText(inRanges: replacementRanges as [NSValue], replacementStrings: replacementStrings) else { return false }
         
-        let stringLength = string.nsRange.length
         let attributedString = NSAttributedString(string: string, attributes: self.typingAttributes)
+        let stringLength = attributedString.length
         var newInsertionLocations: [Int] = []
         var offset = 0
         
         self.textStorage?.beginEditing()
         for range in replacementRanges {
-            let replacementRange = NSRange(location: range.location + offset, length: range.length)
-            
-            self.textStorage?.replaceCharacters(in: replacementRange, with: attributedString)
+            self.textStorage?.replaceCharacters(in: range.shifted(offset: offset), with: attributedString)
             
             newInsertionLocations.append(range.location + offset + stringLength)
             
@@ -102,29 +102,33 @@ extension MultiCursorEditing where Self: NSTextView {
     }
     
     
-    /// Remove backward at all insertionRanges when there is more than one to delete.
+    /// Remove characters at all insertionRanges when there is more than one to delete.
     ///
+    /// - Parameter forward: Perform the forward delete when the flag raised; otherwise, delete backward.
     /// - Returns: Whether the deletion succeed.
-    func multipleDeleteBackward() -> Bool {
+    func multipleDelete(forward: Bool = false) -> Bool {
         
         let ranges = self.insertionRanges
         
         guard ranges.count > 1 else { return false }
         
         let deletionRanges: [NSRange] = ranges
-            .map { range in
+            .map { range -> NSRange in
                 guard range.location > 0 else { return range }
-                guard range.length == 0 else { return range }
+                guard range.isEmpty else { return range }
                 
-                if let self = self as? NSTextView & Indenting,
+                if !forward,
+                    let self = self as? Indenting,
                     self.isAutomaticTabExpansionEnabled,
                     let indentRange = self.string.rangeForSoftTabDeletion(in: range, tabWidth: self.tabWidth)
                 { return indentRange }
                 
-                return NSRange(location: range.location-1, length: 1)
+                let location = forward ? range.location : range.location - 1
+                
+                return (self.string as NSString).rangeOfComposedCharacterSequence(at: location)
             }
             // remove overlappings
-            .map { Range<Int>($0)! }
+            .compactMap { Range($0) }
             .reduce(into: IndexSet()) { $0.insert(integersIn: $1) }
             .rangeView
             .map { NSRange($0) }
@@ -152,7 +156,7 @@ extension MultiCursorEditing where Self: NSTextView {
         let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
         
         var locations: [Int] = []
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { (_, usedRect, _, glyphRange, stop) in
+        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { [unowned self] (_, usedRect, _, glyphRange, stop) in
             let rect = usedRect.offset(by: self.textContainerOrigin)  // to view-based
             let point = NSPoint(x: startPoint.x, y: rect.midY)
             
@@ -175,21 +179,21 @@ extension MultiCursorEditing where Self: NSTextView {
         
         guard !ranges.isEmpty else { return nil }
         
-        let ranges = ranges.unique.sorted { $0.location < $1.location }
+        let ranges = ranges.unique.sorted(\.location)
         let selectionSet = ranges
-            .map { Range<Int>($0)! }
+            .compactMap { Range($0) }
             .reduce(into: IndexSet()) { $0.insert(integersIn: $1) }
         let nonemptyRanges = selectionSet.rangeView
             .map { NSRange($0) }
         var emptyRanges = ranges
-            .filter { $0.length == 0 }
+            .filter { $0.isEmpty }
             .filter { !selectionSet.contains(integersIn: ($0.location-1)..<$0.location) }  // -1 to check upper bound
         
         // -> In the proper implementation of NSTextView, `selectionRanges` can have
-        //    either a single empty range, a single nonempty range, or multiple nonempty ranges (macOS 10.14).
+        //    either a single empty range, a single non-empty range, or multiple nonempty ranges. (macOS 10.14)
         let selectedRanges = nonemptyRanges.isEmpty ? [emptyRanges.removeFirst()] : nonemptyRanges
         
-        return (selectedRanges as [NSValue], emptyRanges.map { $0.location })
+        return (selectedRanges as [NSValue], emptyRanges.map(\.location))
     }
     
     
@@ -204,9 +208,9 @@ extension MultiCursorEditing where Self: NSTextView {
         var ranges = self.insertionRanges
         
         if let clicked = ranges.first(where: { $0.touches(location) }) {
-            ranges.remove(clicked)
+            ranges.removeFirst(clicked)
         } else {
-            ranges.append(NSRange(location..<location))
+            ranges.append(NSRange(location: location, length: 0))
         }
         
         guard let set = self.prepareForSelectionUpdate(ranges) else { return false }
@@ -226,7 +230,7 @@ extension MultiCursorEditing where Self: NSTextView {
     ///   - range: The range of each insertion.
     func moveCursors(affinity: NSSelectionAffinity, using block: (_ range: NSRange) -> Int) {
         
-        let ranges = self.insertionRanges.map(block).map { NSRange($0..<$0) }
+        let ranges = self.insertionRanges.map(block).map { NSRange(location: $0, length: 0) }
         
         guard let set = self.prepareForSelectionUpdate(ranges) else { return assertionFailure() }
         
@@ -234,18 +238,25 @@ extension MultiCursorEditing where Self: NSTextView {
         self.setSelectedRanges(set.selectedRanges, affinity: affinity, stillSelecting: false)
         self.insertionLocations = set.insertionLocations
         
-        self.scrollRangeToVisible(NSRange(ranges.first!.lowerBound..<ranges.last!.upperBound))
+        let rangeToVisible: NSRange = {
+            switch affinity {
+                case .downstream: return ranges.first!
+                case .upstream:   return ranges.last!
+                @unknown default: fatalError()
+            }
+        }()
+        self.scrollRangeToVisible(rangeToVisible)
     }
     
     
     /// Move all cursors and expand selection with the same rule.
     ///
     /// - Parameters:
+    ///   - forward: `true` if the cursor should move forward, otherwise `false`.
     ///   - affinity: The selection affinity for the movement.
-    ///   - block: The block that describes the rule how to change the selection.
-    ///   - range: The range of each insertion.
-    ///   - origin: The character index where the selection initially started.
-    func moveCursorsAndModifySelection(affinity: NSSelectionAffinity, using block: (_ range: NSRange, _ origin: Int?) -> (cursor: Int, origin: Int)) {
+    ///   - block: The block that describes the rule how to move the cursor.
+    ///   - cursor: The character index of the cursor to move.
+    func moveCursorsAndModifySelection(forward: Bool, affinity: NSSelectionAffinity, using block: (_ cursor: Int) -> Int) {
         
         var origins = self.selectionOrigins
         var newOrigins: [Int] = []
@@ -257,11 +268,20 @@ extension MultiCursorEditing where Self: NSTextView {
                 origin = nil
             }
             
-            let bounds = block(range, origin)
+            let (cursor, newOrigin): (Int, Int) = {
+                switch (forward, origin) {
+                    case (false, range.lowerBound): return (range.upperBound, range.lowerBound)
+                    case (false, _):                return (range.lowerBound, range.upperBound)
+                    case (true, range.upperBound):  return (range.lowerBound, range.upperBound)
+                    case (true, _):                 return (range.upperBound, range.lowerBound)
+                }
+            }()
             
-            newOrigins.append(origin ?? bounds.origin)
+            let newCursor = block(cursor)
             
-            return (bounds.cursor <= bounds.origin) ? NSRange(bounds.cursor..<bounds.origin) : NSRange(bounds.origin..<bounds.cursor)
+            newOrigins.append(origin ?? newOrigin)
+            
+            return (newCursor <= newOrigin) ? NSRange(newCursor..<newOrigin) : NSRange(newOrigin..<newCursor)
         }
         
         guard let set = self.prepareForSelectionUpdate(ranges) else { return assertionFailure() }
@@ -278,7 +298,7 @@ extension MultiCursorEditing where Self: NSTextView {
     /// Enable or disable `insertionPointTimer` according to the selection state.
     func updateInsertionPointTimer() {
         
-        if self.isPerformingRectangularSelection || (!self.insertionLocations.isEmpty && self.selectedRanges.allSatisfy({ $0.rangeValue.length > 0 })) {
+        if self.isPerformingRectangularSelection || (!self.insertionLocations.isEmpty && self.selectedRanges.allSatisfy({ !$0.rangeValue.isEmpty })) {
             self.enableOwnInsertionPointTimer()
             
         } else {
@@ -297,59 +317,82 @@ extension MultiCursorEditing where Self: NSTextView {
             let textContainer = self.textContainer
             else { assertionFailure(); return }
         
-        let glyphRanges = self.insertionRanges.map { layoutManager.glyphRange(forCharacterRange: $0, actualCharacterRange: nil) }
-        let wholeRange = NSRange(glyphRanges.first!.lowerBound..<glyphRanges.last!.upperBound)
-        let lineFragmentUsedRects = layoutManager.lineFragmentUsedRects(in: wholeRange)
+        let insertionRanges = self.insertionRanges
+        let glyphRanges = insertionRanges.map { layoutManager.glyphRange(forCharacterRange: $0, actualCharacterRange: nil) }
+        var effectiveGlyphRange: NSRange = .notFound
+        let lineFragmentUsedRects = layoutManager.lineFragmentUsedRects(inSelectedGlyphRanges: glyphRanges, effectiveRange: &effectiveGlyphRange)
         
-        // new visual line to append
-        var newLineRect: NSRect = {
+        // abort when one of the cusors already reached to the edge
+        guard
+            !(affinity == .downstream && effectiveGlyphRange.lowerBound == 0),
+            !(affinity == .upstream && (
+                (layoutManager.extraLineFragmentTextContainer == nil && !layoutManager.isValidGlyphIndex(effectiveGlyphRange.upperBound)) ||
+                (layoutManager.extraLineFragmentTextContainer != nil && insertionRanges.last?.lowerBound == self.string.length)))
+            else { return }
+        
+        // get new visual line to append
+        // -> Use line fragment to allow placing insertion points even when the line is shorter than the origin insertion columns.
+        let newLineRect: CGRect = {
             switch affinity {
-            case .downstream:
-                let rect = lineFragmentUsedRects.first!
-                return rect.offsetBy(dx: 0, dy: -rect.height)
-            case.upstream:
-                let rect = lineFragmentUsedRects.last!
-                return rect.offsetBy(dx: 0, dy: rect.height)
+                case .downstream:
+                    return layoutManager.lineFragmentRect(forGlyphAt: effectiveGlyphRange.lowerBound - 1, effectiveRange: nil, withoutAdditionalLayout: true)
+                case .upstream where layoutManager.isValidGlyphIndex(effectiveGlyphRange.upperBound):
+                    return layoutManager.lineFragmentRect(forGlyphAt: effectiveGlyphRange.upperBound, effectiveRange: nil, withoutAdditionalLayout: true)
+                case .upstream:
+                    return layoutManager.extraLineFragmentRect
+                @unknown default: fatalError()
             }
         }()
         
-        let baseIndex = (affinity == .downstream) ? glyphRanges.last!.lowerBound : glyphRanges.first!.upperBound
-        
         // get base selection rects in the origin line
-        // -> At the same time, expand newLineRect to the entire line fragment
-        //    to allow placing insertion points even when the line is shorter than the origin insertion columns.
+        let baseIndex = (affinity == .downstream) ? glyphRanges.last!.lowerBound : glyphRanges.first!.upperBound
+        let safeBaseIndex = layoutManager.isValidGlyphIndex(baseIndex) ? baseIndex : baseIndex - 1
         var baseLineRange: NSRange = .notFound
-        newLineRect.size.width = layoutManager.lineFragmentRect(forGlyphAt: baseIndex, effectiveRange: &baseLineRange, withoutAdditionalLayout: true).width
+        layoutManager.lineFragmentRect(forGlyphAt: safeBaseIndex, effectiveRange: &baseLineRange, withoutAdditionalLayout: true)
         let rowBounds = glyphRanges
-            .filter { baseLineRange.touches($0) }
+            .filter { baseLineRange.intersects($0) }
             .map { layoutManager.minimumRowBounds(of: $0, in: textContainer) }
         
         let newRanges = (lineFragmentUsedRects + [newLineRect])
             .flatMap { lineRect in rowBounds
-                .filter { $0.x < lineRect.maxX }
+                .filter { ($0.x...($0.x + $0.width)).overlaps(lineRect.minX...lineRect.maxX) }
                 .map { NSRect(x: $0.x, y: lineRect.midY, width: $0.width, height: 0) }
             }
-            .map { layoutManager.glyphRange(forLineRect: $0, in: textContainer) }
-            .map { layoutManager.characterRange(forGlyphRange: $0, actualGlyphRange: nil) }
+            .map { $0.offset(by: self.textContainerOrigin) }  // to view-based
+            .map { self.lineInsertionRange(for: $0) }
         
         guard let set = self.prepareForSelectionUpdate(newRanges) else { return }
         
-        self.setSelectedRanges(set.selectedRanges, affinity: affinity, stillSelecting: false)
+        self.setSelectedRanges(set.selectedRanges, affinity: .upstream, stillSelecting: false)
         self.insertionLocations = set.insertionLocations
         self.scrollRangeToVisible(newRanges.last!)  // the last is newly added one
+    }
+    
+    
+    /// Return the range for selection that are laid out within the given rectangle
+    /// expecting the given rect is contained in a single line fragment.
+    ///
+    /// - Parameter rect: The bounding rectangle for which to return range.
+    /// - Returns: Character range corresponding to the given rectangle.
+    private func lineInsertionRange(for rect: NSRect) -> NSRange {
+        
+        let minBound = self.characterIndexForInsertion(at: NSPoint(x: rect.minX, y: rect.midY))
+        let maxBound = self.characterIndexForInsertion(at: NSPoint(x: rect.maxX, y: rect.midY))
+        
+        return NSRange(min(minBound, maxBound)..<max(minBound, maxBound))
     }
     
 }
 
 
 
-@objc extension NSTextView {
+extension NSTextView {
     
     /// Calculate rect for insartion point at `index`.
     ///
     /// - Parameter index: The character index where the insertion point will locate.
     /// - Returns: Rect where insertion point filled.
-    func insertionPointRect(at index: Int) -> NSRect {
+    @objc func insertionPointRect(at index: Int) -> NSRect {
         
         guard
             let layoutManager = self.layoutManager,
@@ -357,16 +400,14 @@ extension MultiCursorEditing where Self: NSTextView {
             else { assertionFailure(); return .zero }
         
         let glyphIndex = layoutManager.glyphIndexForCharacter(at: index)
-        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(glyphIndex..<glyphIndex), in: textContainer)
+        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyphIndex, length: 0), in: textContainer)
             .offset(by: self.textContainerOrigin)
+        let scale = self.scale
+        let minX = floor(rect.minX * scale) / scale
         
-        return NSRect(x: floor(rect.minX), y: rect.minY, width: 1 / self.scale, height: rect.height)
+        return NSRect(x: minX, y: rect.minY, width: 1 / scale, height: rect.height)
     }
-}
-
-
-
-extension NSTextView {
+    
     
     /// Find the location for a insertion point where one (visual) line above to the given insertion point location.
     ///
@@ -380,7 +421,7 @@ extension NSTextView {
             else { assertionFailure(); return 0 }
         
         let glyphIndex = layoutManager.glyphIndexForCharacter(at: index)
-        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(glyphIndex..<glyphIndex), in: textContainer)
+        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyphIndex, length: 0), in: textContainer)
             .offset(by: self.textContainerOrigin)
         let point = NSPoint(x: rect.minX, y: rect.minY - 1)
         
@@ -400,7 +441,7 @@ extension NSTextView {
             else { assertionFailure(); return 0 }
         
         let glyphIndex = layoutManager.glyphIndexForCharacter(at: index)
-        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(glyphIndex..<glyphIndex), in: textContainer)
+        let rect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyphIndex, length: 0), in: textContainer)
             .offset(by: self.textContainerOrigin)
         let point = NSPoint(x: rect.minX, y: rect.maxY + 1)
         
@@ -462,7 +503,7 @@ private extension MultiCursorEditing where Self: NSTextView {
 
 private extension NSLayoutManager {
     
-    /// Retrun the bounds between upper and lower bounds of the given `range` in horizontal axis.
+    /// Return the bounds between upper and lower bounds of the given `range` in horizontal axis.
     ///
     /// - Parameters:
     ///   - characterRange: The glyph range for which to return the bounds.
@@ -471,52 +512,52 @@ private extension NSLayoutManager {
     ///            when the range extends across multiple lines.
     func minimumRowBounds(of glyphRange: NSRange, in container: NSTextContainer) -> (x: CGFloat, width: CGFloat) {
         
-        let lowerRect = self.boundingRect(forGlyphRange: NSRange(location: glyphRange.lowerBound, length: 0), in: container)
-        let upperRect = self.boundingRect(forGlyphRange: NSRange(location: glyphRange.upperBound, length: 0), in: container)
+        let lowerX = self.boundingRect(forGlyphRange: NSRange(location: glyphRange.lowerBound, length: 0), in: container).minX
+        let upperX = self.boundingRect(forGlyphRange: NSRange(location: glyphRange.upperBound, length: 0), in: container).minX
         
-        return (x: min(lowerRect.minX, upperRect.minX), width: abs(lowerRect.minX - upperRect.minX))
-    }
-    
-    
-    /// Return the range for glyphs that are laid out within the given rectangle in the given text container
-    /// expecting the given rect is contained in a single line fragment.
-    ///
-    /// - Parameters:
-    ///   - rect: The bounding rectangle for which to return glyphs.
-    ///   - textContainer: The container in which the returned glyph is laid out.
-    /// - Returns: Glyph range corresponding to the given rectangle.
-    /// - Note: Not like formal `glyphRange(forBoundingRect:in:)`, this method returns non-zero location
-    ///         even when the given rect is empty.
-    func glyphRange(forLineRect rect: NSRect, in container: NSTextContainer) -> NSRange {
-        
-        let lowerGlyphIndex = self.glyphIndex(for: NSPoint(x: rect.minX, y: rect.minY), in: container)
-        let upperGlyphIndex = self.glyphIndex(for: NSPoint(x: rect.maxX, y: rect.minY), in: container)
-        
-        return NSRange(lowerGlyphIndex..<upperGlyphIndex)
+        return (x: min(lowerX, upperX), width: abs(lowerX - upperX))
     }
     
     
     /// Return all line fragment used rects including `extraLineFragmentUsedRect` or empty range at the end of given range.
     ///
-    /// - Parameter characterRange: The glyph range where to return line fragment rectangles.
+    /// - Parameters:
+    ///   - glyphRange: The glyph range where to return line fragment rectangles.
+    ///   - effectiveRange: On output, the range for all glyphs in the line fragments.
     /// - Returns: An array of the portions of the line fragment rectangles that actually contains glyphs or other marks that are drawn.
-    func lineFragmentUsedRects(in glyphRange: NSRange) -> [NSRect] {
+    func lineFragmentUsedRects(inSelectedGlyphRanges glyphRanges: [NSRange], effectiveRange: inout NSRange) -> [NSRect] {
+        
+        assert(!glyphRanges.isEmpty)
         
         var rects: [NSRect] = []
-        var glyphIndex = glyphRange.lowerBound
-        while glyphIndex <= glyphRange.upperBound {
-            var effectiveRange: NSRange = .notFound
-            let rect = self.lineFragmentUsedRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange, withoutAdditionalLayout: true)
-            glyphIndex = effectiveRange.upperBound
-            
-            rects.append(rect)
-        }
+        effectiveRange = glyphRanges.first!
         
-        if glyphRange.upperBound == self.numberOfGlyphs {
-            rects.append(self.extraLineFragmentUsedRect)
+        for glyphRange in glyphRanges {
+            if !glyphRange.isEmpty {
+                var localEffectiveRange = glyphRange
+                self.enumerateLineFragments(forGlyphRange: glyphRange) { (_, usedRect, _, effectiveLineRange, _) in
+                    rects.append(usedRect)
+                    localEffectiveRange.formUnion(effectiveLineRange)
+                }
+                effectiveRange.formUnion(localEffectiveRange)
+                
+            } else if self.extraLineFragmentTextContainer != nil, !self.isValidGlyphIndex(glyphRange.location) {
+                rects.append(self.extraLineFragmentUsedRect)
+                effectiveRange.formUnion(glyphRange)
+                
+            } else {
+                let safeGlyphIndex = self.isValidGlyphIndex(glyphRange.location) ? glyphRange.location : glyphRange.location - 1
+                
+                var effectiveLineRange: NSRange = .notFound
+                let usedRect = self.lineFragmentUsedRect(forGlyphAt: safeGlyphIndex, effectiveRange: &effectiveLineRange, withoutAdditionalLayout: true)
+                
+                rects.append(usedRect)
+                effectiveRange.formUnion(effectiveLineRange)
+            }
         }
+        assert(!rects.isEmpty)
         
-        return rects
+        return rects.unique
     }
     
 }

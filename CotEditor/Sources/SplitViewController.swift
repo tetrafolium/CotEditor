@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ final class SplitViewController: NSSplitViewController {
     
     // MARK: Public Properties
     
-    private(set) weak var focusedSubviewController: EditorViewController?
+    private(set) weak var focusedChild: EditorViewController?
     
     
     
@@ -59,7 +59,7 @@ final class SplitViewController: NSSplitViewController {
     }
     
     
-    /// workaround for crash on macOS 10.12 (2016-09) and on macOS 10.13 (2018-05)
+    /// workaround for crash on macOS 10.12 – macOS 10.15.
     override func splitView(_ splitView: NSSplitView, shouldHideDividerAt dividerIndex: Int) -> Bool {
         
         return false
@@ -69,20 +69,18 @@ final class SplitViewController: NSSplitViewController {
     /// apply current state to related menu items
     override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         
-        guard let action = item.action else { return false }
-        
-        switch action {
-        case #selector(toggleSplitOrientation):
-            if let item = item as? NSMenuItem {
-                let title = self.splitView.isVertical ? "Stack Editors Horizontally" : "Stack Editors Vertically"
-                item.title = title.localized
-            }
-            return self.splitViewItems.count > 1
+        switch item.action {
+            case #selector(toggleSplitOrientation):
+                if let item = item as? NSMenuItem {
+                    let title = self.splitView.isVertical ? "Stack Editors Horizontally" : "Stack Editors Vertically"
+                    item.title = title.localized
+                }
+                return self.splitViewItems.count > 1
             
-        case #selector(focusNextSplitTextView), #selector(focusPrevSplitTextView):
-            return self.splitViewItems.count > 1
+            case #selector(focusNextSplitTextView), #selector(focusPrevSplitTextView):
+                return self.splitViewItems.count > 1
             
-        default: break
+            default: break
         }
         
         return super.validateUserInterfaceItem(item)
@@ -97,13 +95,13 @@ final class SplitViewController: NSSplitViewController {
         
         guard let textView = notification.object as? EditorTextView else { return }
         
-        guard let viewController = {
-            self.children.lazy
-                .compactMap { $0 as? EditorViewController }
-                .first { $0.textView == textView }
-            }() else { return }
+        guard
+            let viewController = self.children.lazy
+                .compactMap({ $0 as? EditorViewController })
+                .first(where: { $0.textView == textView })
+            else { return }
         
-        self.focusedSubviewController = viewController
+        self.focusedChild = viewController
     }
     
     
@@ -114,13 +112,11 @@ final class SplitViewController: NSSplitViewController {
     func addSubview(for editorViewController: EditorViewController, relativeTo otherEditorViewController: EditorViewController?) {
         
         let splitViewItem = NSSplitViewItem(viewController: editorViewController)
-        
         splitViewItem.holdingPriority = NSLayoutConstraint.Priority(251)
         
         if let otherEditorViewController = otherEditorViewController {
-            guard let baseIndex = self.children.index(of: otherEditorViewController) else {
-                assertionFailure("The base editor view is not belong to the same window.")
-                return
+            guard let baseIndex = self.children.firstIndex(of: otherEditorViewController) else {
+                return assertionFailure("The base editor view is not belong to the same window.")
             }
             
             self.insertSplitViewItem(splitViewItem, at: baseIndex + 1)
@@ -169,6 +165,7 @@ final class SplitViewController: NSSplitViewController {
     }
     
     
+    
     // MARK: Private Methods
     
     /// move focus to next/previous text view
@@ -178,15 +175,15 @@ final class SplitViewController: NSSplitViewController {
         
         guard count > 1 else { return }
         
-        let focusIndex = self.children.index(of: self.focusedSubviewController!) ?? 0
+        let focusIndex = self.children.firstIndex(of: self.focusedChild!) ?? 0
         let index: Int = {
             switch focusIndex {
-            case 0 where !onNext:
-                return count - 1
-            case count - 1 where onNext:
-                return 0
-            default:
-                return focusIndex + (onNext ? 1 : -1)
+                case 0 where !onNext:
+                    return count - 1
+                case count - 1 where onNext:
+                    return 0
+                default:
+                    return focusIndex + (onNext ? 1 : -1)
             }
         }()
         

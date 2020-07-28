@@ -1,0 +1,34 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "DifferenceKit",
+        "repositoryURL": "https://github.com/ra1028/DifferenceKit",
+        "state": {
+          "branch": null,
+          "revision": "14c66681e12a38b81045f44c6c29724a0d4b0e72",
+          "version": "1.1.5"
+        }
+      },
+      {
+        "package": "ColorCode",
+        "repositoryURL": "https://github.com/1024jp/WFColorCode",
+        "state": {
+          "branch": null,
+          "revision": "70ca646fed5c40e19331d48b2ba38df1f790c828",
+          "version": "2.6.1"
+        }
+      },
+      {
+        "package": "Yams",
+        "repositoryURL": "https://github.com/jpsim/Yams",
+        "state": {
+          "branch": null,
+          "revision": "81a65c4069c28011ee432f2858ba0de49b086677",
+          "version": "3.0.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 
 import Cocoa
 
-protocol AdditionalDocumentPreparing: AnyObject {
+protocol AdditionalDocumentPreparing: NSDocument {
     
     func didMakeDocumentForExisitingFile(url: URL)
 }
@@ -34,10 +34,12 @@ protocol AdditionalDocumentPreparing: AnyObject {
 
 final class DocumentController: NSDocumentController {
     
-    private(set) lazy var autosaveDirectoryURL: URL =  try! FileManager.default.url(for: .autosavedInformationDirectory,
-                                                                                    in: .userDomainMask,
-                                                                                    appropriateFor: nil,
-                                                                                    create: true)
+    // MARK: Public Properties
+    
+    private(set) lazy var autosaveDirectoryURL: URL = try! FileManager.default.url(for: .autosavedInformationDirectory,
+                                                                                   in: .userDomainMask,
+                                                                                   appropriateFor: nil,
+                                                                                   create: true)
     private(set) var accessorySelectedEncoding: String.Encoding?
     
     
@@ -68,9 +70,9 @@ final class DocumentController: NSDocumentController {
     
     // MARK: Document Controller Methods
     
-    /// automatically insert Shre menu (on macOS 10.13 and later)
+    /// automatically inserts Share menu
     override var allowsAutomaticShareMenu: Bool {
-
+        
         return true
     }
     
@@ -87,7 +89,7 @@ final class DocumentController: NSDocumentController {
         }
         self.transientDocumentLock.unlock()
         
-        super.openDocument(withContentsOf: url, display: false) { (document, documentWasAlreadyOpen, error) in
+        super.openDocument(withContentsOf: url, display: false) { [unowned self] (document, documentWasAlreadyOpen, error) in
             
             assert(Thread.isMainThread)
             
@@ -190,7 +192,7 @@ final class DocumentController: NSDocumentController {
         openPanel.isAccessoryViewDisclosed = true
         
         // run non-modal open panel
-        super.beginOpenPanel(openPanel, forTypes: inTypes) { (result: Int) in
+        super.beginOpenPanel(openPanel, forTypes: inTypes) { [unowned self] (result: Int) in
             
             if result == NSApplication.ModalResponse.OK.rawValue {
                 self.accessorySelectedEncoding = accessoryController.selectedEncoding
@@ -201,40 +203,17 @@ final class DocumentController: NSDocumentController {
     }
     
     
-    /// return enability of actions
+    /// return availability of actions
     override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         
-        if item.action == #selector(newDocumentAsTab) {
-            return self.currentDocument != nil
+        switch item.action {
+            case #selector(newDocumentAsTab):
+                return self.currentDocument != nil
+            default:
+                break
         }
         
         return super.validateUserInterfaceItem(item)
-    }
-    
-    
-    
-    // MARK: Public Methods
-    
-    /// insert hand-made Share menu to the File menu
-    func insertLegacyShareMenu() {
-        
-        let fileMenu = MainMenu.file.menu!
-        
-        // insert at the end of the group of Save/Close
-        var inSaveGroup = false
-        let index = fileMenu.items.enumerated().first { (_, item) in
-            if item.action == #selector(NSWindow.performClose) {
-                inSaveGroup = true
-            }
-            
-            return inSaveGroup && item.isSeparatorItem
-        }?.offset ?? fileMenu.numberOfItems
-        
-        let item = ShareMenuItem()
-        item.tag = MainMenu.MenuItemTag.sharingService.rawValue
-        
-        fileMenu.insertItem(item, at: index)
-        fileMenu.insertItem(NSMenuItem.separator(), at: index)
     }
     
     
@@ -306,8 +285,8 @@ final class DocumentController: NSDocumentController {
         
         // notify accessibility clients about the value replacement of the transient document with opened document
         document.textStorage.layoutManagers
-            .flatMap { $0.textContainers }
-            .compactMap { $0.textView }
+            .flatMap(\.textContainers)
+            .compactMap(\.textView)
             .forEach { NSAccessibility.post(element: $0, notification: .valueChanged) }
     }
     
@@ -328,7 +307,8 @@ final class DocumentController: NSDocumentController {
                            kUTTypeZipArchive,
                            kUTTypeBzip2Archive]
         if binaryTypes.contains(where: { UTTypeConformsTo(cfTypeName, $0) }),
-            !UTTypeEqual(cfTypeName, kUTTypeScalableVectorGraphics)  // SVG is plain-text (except SVGZ)
+            !UTTypeEqual(cfTypeName, kUTTypeScalableVectorGraphics),  // SVG is plain-text (except SVGZ)
+            url.pathExtension != "ts"  // "ts" extension conflicts between MPEG-2 streamclip file and TypeScript
         {
             throw DocumentReadError(kind: .binaryFile(type: typeName), url: url)
         }
@@ -356,6 +336,7 @@ private struct DocumentReadError: LocalizedError, RecoverableError {
         case tooLarge(size: Int)
     }
     
+    
     let kind: ErrorKind
     let url: URL
     
@@ -363,14 +344,14 @@ private struct DocumentReadError: LocalizedError, RecoverableError {
     var errorDescription: String? {
         
         switch self.kind {
-        case .binaryFile:
-            return String(format: "The file “%@” doesn’t appear to be text data.".localized,
-                          self.url.lastPathComponent)
+            case .binaryFile:
+                return String(format: "The file “%@” doesn’t appear to be text data.".localized,
+                              self.url.lastPathComponent)
             
-        case .tooLarge(let size):
-            return String(format: "The file “%@” has a size of %@.".localized,
-                          self.url.lastPathComponent,
-                          ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+            case .tooLarge(let size):
+                return String(format: "The file “%@” has a size of %@.".localized,
+                              self.url.lastPathComponent,
+                              ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
         }
     }
     
@@ -378,12 +359,12 @@ private struct DocumentReadError: LocalizedError, RecoverableError {
     var recoverySuggestion: String? {
         
         switch self.kind {
-        case .binaryFile(let type):
-            let localizedTypeName = (UTTypeCopyDescription(type as CFString)?.takeRetainedValue() as String?) ?? "unknown file type"
-            return String(format: "The file is %@.\n\nDo you really want to open the file?".localized, localizedTypeName)
+            case .binaryFile(let type):
+                let localizedTypeName = (UTTypeCopyDescription(type as CFString)?.takeRetainedValue() as String?) ?? "unknown file type"
+                return String(format: "The file appears to be %@.\n\nDo you really want to open the file?".localized, localizedTypeName)
             
-        case .tooLarge:
-            return "Opening such a large file can make the application slow or unresponsive.\n\nDo you really want to open the file?".localized
+            case .tooLarge:
+                return "Opening such a large file can make the application slow or unresponsive.\n\nDo you really want to open the file?".localized
         }
     }
     

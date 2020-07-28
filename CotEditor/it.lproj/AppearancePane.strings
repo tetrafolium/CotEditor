@@ -10,7 +10,7 @@
  
  ------------------------------------------------------------------------------
  
- © 2016-2018 CotEditor Project
+ © 2016-2019 CotEditor Project
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@
 "3289.title" = "Select…";
 /* Class = "NSButtonCell"; title = "Anti-aliasing"; ObjectID = "3290"; */
 "3290.title" = "Anti-aliasing";
+/* Class = "NSButtonCell"; title = "Ligatures"; ObjectID = "g3S-3v-6ZA"; */
+"g3S-3v-6ZA.title" = "Ligature";
 
 /* Class = "NSTextFieldCell"; title = "Line height:"; ObjectID = "r1c-v3-qW1"; */
 "r1c-v3-qW1.title" = "Altezza riga:";
@@ -47,7 +49,7 @@
 "NIq-Tj-KWB.title" = "Cursore:";
 /* Class = "NSButtonCell"; title = "Bar"; ObjectID = "cnD-9F-CR4"; */
 "cnD-9F-CR4.title" = "Barra";
-/* Class = "NSButtonCell"; title = "Thick Bar"; ObjectID = "rM6-JW-wau"; */
+/* Class = "NSButtonCell"; title = "Thick bar"; ObjectID = "rM6-JW-wau"; */
 "rM6-JW-wau.title" = "Barra spessa";
 /* Class = "NSButtonCell"; title = "Block"; ObjectID = "YG7-Y7-xzs"; */
 "YG7-Y7-xzs.title" = "Riquadro";
@@ -57,16 +59,27 @@
 "oAZ-6U-Ba8.title" = "Invisibili:";
 /* Class = "NSButtonCell"; title = "Show invisible characters"; ObjectID = "gqy-Io-eUU"; */
 "gqy-Io-eUU.title" = "Mostra invisibili";
-/* Class = "NSButtonCell"; title = "Space"; ObjectID = "gcF-OM-SV0"; */
-"gcF-OM-SV0.title" = "Spazio";
+/* Class = "NSButtonCell"; title = "Line ending"; ObjectID = "Ont-7L-Uf5"; */
+"Ont-7L-Uf5.title" = "Termine riga";
 /* Class = "NSButtonCell"; title = "Tab"; ObjectID = "XSb-uU-5QP"; */
 "XSb-uU-5QP.title" = "Tab";
-/* Class = "NSButtonCell"; title = "Line Ending"; ObjectID = "Ont-7L-Uf5"; */
-"Ont-7L-Uf5.title" = "Termine riga";
-/* Class = "NSButtonCell"; title = "Full-width Space"; ObjectID = "Bf2-rS-2zu"; */
-"Bf2-rS-2zu.title" = "A tutta ampiezza";
-/* Class = "NSButtonCell"; title = "Other Invisible Characters"; ObjectID = "sxg-F3-ely"; */
-"sxg-F3-ely.title" = "Altri caratteri invisibili";
+/* Class = "NSButtonCell"; title = "Space"; ObjectID = "gcF-OM-SV0"; */
+"gcF-OM-SV0.title" = "Spazio";
+/* Class = "NSButtonCell"; title = "Other whitespaces"; ObjectID = "Bf2-rS-2zu"; */
+"Bf2-rS-2zu.title" = "Altri spazi vuoti";
+/* Class = "NSButtonCell"; title = "Other control characters"; ObjectID = "sxg-F3-ely"; */
+"sxg-F3-ely.title" = "Altri caratteri di controllo";
+/* Class = "NSButtonCell"; title = "Show indent guides"; ObjectID = "csp-Hi-hb1"; */
+"csp-Hi-hb1.title" = "Mostra guide per l’indentazione";
+
+/* Class = "NSTextFieldCell"; title = "Appearance:"; ObjectID = "6KG-3a-ZuU"; */
+"6KG-3a-ZuU.title" = "Aspetto:";
+/* Class = "NSButtonCell"; title = "Match System"; ObjectID = "apQ-au-gOC"; */
+"apQ-au-gOC.title" = "Come il sistema";
+/* Class = "NSButtonCell"; title = "Light"; ObjectID = "FwU-oj-kwc"; */
+"FwU-oj-kwc.title" = "Chiaro";
+/* Class = "NSButtonCell"; title = "Dark"; ObjectID = "1Cg-21-kjr"; */
+"1Cg-21-kjr.title" = "Scuro";
 
 
 /* Class = "NSTableColumn"; headerCell.title = "Theme"; ObjectID = "Avf-y8-wXG"; */

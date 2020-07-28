@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2015-2019 1024jp
+//  © 2015-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ class FindPanelTextView: NSTextView {
         super.init(coder: coder)
         
         // set system font (standard NSTextField behavior)
-        self.font = NSFont.systemFont(ofSize: 0)
+        self.font = .systemFont(ofSize: 0)
         
         // set inset a bit like NSTextField (horizontal inset is added in FindPanelTextClipView)
         self.textContainerInset = NSSize(width: 0.0, height: 2.0)
@@ -84,7 +84,7 @@ class FindPanelTextView: NSTextView {
     override func resignFirstResponder() -> Bool {
         
         // clear current selection (standard NSTextField behavior)
-        self.selectedRange = NSRange(location: 0, length: 0)
+        self.selectedRange = NSRange(0..<0)
         
         return super.resignFirstResponder()
     }
@@ -103,7 +103,7 @@ class FindPanelTextView: NSTextView {
     override var string: String {
         
         didSet {
-            self.isEmpty = self.string.isEmpty
+            self.isEmpty = string.isEmpty
         }
     }
     
@@ -113,7 +113,7 @@ class FindPanelTextView: NSTextView {
         
         // perform Find Next in find string field (standard NSTextField behavior)
         if performsActionOnEnter {
-           TextFinder.shared.findNext(self)
+            TextFinder.shared.findNext(self)
         }
     }
     
@@ -141,11 +141,11 @@ class FindPanelTextView: NSTextView {
         // swap '¥' with '\' if needed
         if UserDefaults.standard[.swapYenAndBackSlash] {
             switch string {
-            case "\\":
-                string = "¥"
-            case "¥":
-                string = "\\"
-            default: break
+                case "\\":
+                    string = "¥"
+                case "¥":
+                    string = "\\"
+                default: break
             }
         }
         

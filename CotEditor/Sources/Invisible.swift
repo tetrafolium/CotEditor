@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,68 +23,66 @@
 //  limitations under the License.
 //
 
-import Foundation
+import class Foundation.UserDefaults
 
 enum Invisible {
     
-    case space
-    case tab
     case newLine
+    case tab
+    case space
+    case noBreakSpace
     case fullwidthSpace
-    case replacement
+    case otherWhitespace  // Unicode Category Zs (excl. U+1680)
+    case otherControl  // Unicode Category Cc and some of Cf
     
     
-    var candidates: [String] {
+    init?(codeUnit: UTF16.CodeUnit) {
         
-        switch self {
-        case .space:
-            return ["·", "°", "ː", "␣"]
-        case .tab:
-            return ["¬", "⇥", "‣", "▹"]
-        case .newLine:
-            return ["¶", "↩", "↵", "⏎"]
-        case .fullwidthSpace:
-            return ["□", "⊠", "■", "•"]
-        case .replacement:
-            return ["�"]
-        }
-    }
-    
-    
-    var rtlCandidates: [String] {
-        
-        switch self {
-        case .tab:
-            return ["¬", "⇤", "◂", "◃"]
-        case .newLine:
-            return ["¶", "↪", "↳", "⏎"]
-        default:
-            return self.candidates
-        }
-    }
-    
-}
-
-
-
-// MARK: Code Unit
-
-extension Invisible {
-
-    init?(codeUnit: Unicode.UTF16.CodeUnit) {
+        // > NSGlyphGenerator generates NSControlGlyph for all characters
+        // > in the Unicode General Category C* and U200B (ZERO WIDTH SPACE).
+        //   cf. https://developer.apple.com/documentation/appkit/nscontrolglyph
         
         switch codeUnit {
-        case 0x0020, 0x00A0:  // SPACE, NO-BREAK SPACE
-            self = .space
-        case 0x0009:  // HORIZONTAL TABULATION a.k.a. \t
-            self = .tab
-        case 0x000A:  // LINE FEED a.k.a. \n
-            self = .newLine
-        case 0x3000:  // IDEOGRAPHIC SPACE a.k.a. full-width space (JP)
-            self = .fullwidthSpace
-        default:
-            // `.replacement` cannot be determined only with code unit
-            return nil
+            case 0x000A,  // LINE FEED (Cc) a.k.a. \n
+                 0x000D:  // CARRIAGE RETURN (Cc)
+                self = .newLine
+            case 0x0009:  // HORIZONTAL TABULATION (Cc) a.k.a. \t
+                self = .tab
+            case 0x0020:  // SPACE (Zs)
+                self = .space
+            case 0x00A0,  // NO-BREAK SPACE (Zs)
+                 0x2007,  // FIGURE SPACE (Zs)
+                 0x202F:  // NARROW NO-BREAK SPACE (Zs)
+                self = .noBreakSpace
+            case 0x3000:  // IDEOGRAPHIC SPACE (Zs) a.k.a. Japanese full-width space
+                self = .fullwidthSpace
+            case 0x2000...0x200A,  // (Zs) various width spaces, such as THREE-PER-EM SPACE
+                 0x205F:  // MEDIUM MATHEMATICAL SPACE (Zs)
+                self = .otherWhitespace
+            case 0x0000...0x001F, 0x007F...0x009F,  // C0 and C1 (Cc)
+                 0x200B,  // ZERO WIDTH SPACE (Cf)
+                 0x200C,  // ZERO WIDTH NON-JOINER (Cf)
+                 0x2060,  // WORD JOINER (Cf)
+                 0xFEFF,  // ZERO WIDTH NO-BREAK SPACE a.k.a. BOM (Cf)
+                 0x061C, 0x200E...0x200F, 0x202A...0x202E, 0x2066...0x206F,  // bidi controls (Cf)
+                 0xFFF9...0xFFFB:  // interlinear annotations, controls for ruby (Cf)
+                self = .otherControl
+            default:
+                return nil
+        }
+    }
+    
+    
+    var symbol: Character {
+        
+        switch self {
+            case .newLine: return "↩"
+            case .tab: return "→"
+            case .space: return "·"
+            case .noBreakSpace: return "·̂"
+            case .fullwidthSpace: return "□"
+            case .otherWhitespace: return "⹀"
+            case .otherControl: return "�"
         }
     }
     
@@ -92,30 +90,34 @@ extension Invisible {
 
 
 
-// MARK: User Defaults
+// MARK: User Deafults
 
-extension Invisible {
+extension Invisible: CaseIterable {
     
-    var usedSymbol: String {
+    var visibilityDefaultKey: DefaultKey<Bool> {
         
-        guard
-            let key = self.defaultTypeKey,
-            let symbol = self.candidates[safe: UserDefaults.standard[key]]
-            else { return self.candidates.first! }
-        
-        return symbol
+        switch self {
+            case .newLine: return .showInvisibleNewLine
+            case .tab: return .showInvisibleTab
+            case .space: return .showInvisibleSpace
+            case .noBreakSpace: return .showInvisibleWhitespaces
+            case .fullwidthSpace: return .showInvisibleWhitespaces
+            case .otherWhitespace: return .showInvisibleWhitespaces
+            case .otherControl: return .showInvisibleControl
+        }
     }
     
+}
+
+
+extension UserDefaults {
     
-    private var defaultTypeKey: DefaultKey<Int>? {
+    var showsInvisible: Set<Invisible> {
         
-            switch self {
-            case .space: return .invisibleSpace
-            case .tab: return .invisibleTab
-            case .newLine: return .invisibleNewLine
-            case .fullwidthSpace: return .invisibleFullwidthSpace
-            case .replacement: return nil
-            }
+        let invisibles = Invisible.allCases
+            .filter { self[$0.visibilityDefaultKey] }
+        
+        return Set(invisibles)
     }
     
 }

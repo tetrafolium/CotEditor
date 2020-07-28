@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2015-2018 1024jp
+//  © 2015-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@
 //  limitations under the License.
 //
 
-import Cocoa
+import Foundation
+import AppKit.NSMenuItem
 import Sparkle
 
 private enum AppCastURL {
@@ -31,13 +32,13 @@ private enum AppCastURL {
     case stable
     case beta
     
-    static let host = "https://coteditor.com/"
+    private static let host = "https://coteditor.com/"
     
     
     /// URL for app cast
     var url: String {
         
-        return AppCastURL.host + self.filename
+        return Self.host + self.filename
     }
     
     
@@ -45,10 +46,10 @@ private enum AppCastURL {
     private var filename: String {
         
         switch self {
-        case .stable:
-            return "appcast.xml"
-        case .beta:
-            return "appcast-beta.xml"
+            case .stable:
+                return "appcast.xml"
+            case .beta:
+                return "appcast-beta.xml"
         }
     }
 }
@@ -85,13 +86,12 @@ final class UpdaterManager: NSObject, SPUUpdaterDelegate {
     func setup() {
         
         guard let updater = self.controller.updater else {
-            assertionFailure("no SPUUpdater instance could obtain")
-            return
+            return assertionFailure("No SPUUpdater instance could be obtained.")
         }
         
         // insert "Check for Updates…" menu item
         guard let applicationMenu = MainMenu.application.menu else {
-            preconditionFailure("no menu can be found to attach update menu item.")
+            preconditionFailure("No menu could be found to attach update menu item.")
         }
         let menuItem = NSMenuItem(title: "Check for Updates…".localized,
                                   action: #selector(SPUUpdater.checkForUpdates),
@@ -110,7 +110,7 @@ final class UpdaterManager: NSObject, SPUUpdaterDelegate {
     /// return AppCast file URL dinamically
     func feedURLString(for updater: SPUUpdater) -> String? {
         
-        // force checking beta if the currently runnning one is a beta.
+        // force into checking beta if the currently runnning one is a beta.
         let checksBeta = (Bundle.main.isPrerelease || UserDefaults.standard[.checksUpdatesForBeta])
         let appCast: AppCastURL = checksBeta ? .beta : .stable
         

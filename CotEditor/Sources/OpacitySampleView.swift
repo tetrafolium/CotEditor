@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -33,6 +33,12 @@ final class OpacitySampleView: NSView {
     @IBInspectable private var opacity: CGFloat = 0.5
     
     
+    // MARK: Private Properties
+    
+    private let cornerRadius: CGFloat = 2
+    private let padding: CGFloat = 2
+    
+    
     
     // MARK: -
     // MARK: View Methods
@@ -44,20 +50,27 @@ final class OpacitySampleView: NSView {
         // draw bezel
         let baseFrame = self.bounds.insetBy(dx: NSBezierPath.defaultLineWidth / 2,
                                             dy: NSBezierPath.defaultLineWidth / 2)
-        let basePath = NSBezierPath(roundedRect: baseFrame, xRadius: 2, yRadius: 2)
+        let basePath = NSBezierPath(roundedRect: baseFrame,
+                                    xRadius: self.cornerRadius,
+                                    yRadius: self.cornerRadius)
         
         NSColor.controlBackgroundColor.setFill()
         basePath.fill()
-        NSColor.controlShadowColor.setStroke()
+        NSColor.gridColor.setStroke()
         basePath.stroke()
         
-        // draw rectangle
-        let insideFrame = self.bounds.insetBy(dx: 2, dy: 2)
+        // draw triangle
+        let innerFrame = self.bounds.insetBy(dx: self.padding, dy: self.padding)
         let path = NSBezierPath()
-        path.move(to: insideFrame.origin)
-        path.line(to: NSPoint(x: insideFrame.minX, y: insideFrame.maxY))
-        path.line(to: NSPoint(x: insideFrame.maxX, y: insideFrame.maxY))
+        path.move(to: innerFrame.origin)
+        path.line(to: NSPoint(x: innerFrame.minX, y: innerFrame.maxY))
+        path.line(to: NSPoint(x: innerFrame.maxX, y: innerFrame.maxY))
         path.close()
+        
+        let innerRadius = max(self.cornerRadius - self.padding, 0)
+        let clip = NSBezierPath(roundedRect: innerFrame, xRadius: innerRadius, yRadius: innerRadius)
+        path.append(clip)
+        path.setClip()
         
         NSColor.labelColor.withAlphaComponent(1 - self.opacity).setFill()
         path.fill()

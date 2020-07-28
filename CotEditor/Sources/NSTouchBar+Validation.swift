@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -53,17 +53,17 @@ extension NSTouchBar {
             guard let item = self.item(forIdentifier: identifier), item.isVisible else { continue }
             
             switch item {
-            case let item as NSCustomTouchBarItem:
-                item.validate()
+                case let item as NSCustomTouchBarItem:
+                    item.validate()
                 
-            case let item as NSGroupTouchBarItem:
-                item.groupTouchBar.validateVisibleItems()
+                case let item as NSGroupTouchBarItem:
+                    item.groupTouchBar.validateVisibleItems()
                 
-            case let item as NSPopoverTouchBarItem:
-                item.popoverTouchBar.validateVisibleItems()
-                item.pressAndHoldTouchBar?.validateVisibleItems()
+                case let item as NSPopoverTouchBarItem:
+                    item.popoverTouchBar.validateVisibleItems()
+                    item.pressAndHoldTouchBar?.validateVisibleItems()
                 
-            default: break
+                default: break
             }
         }
     }
@@ -84,9 +84,9 @@ private final class TouchBarValidator {
     var isEnabled: Bool = false {
         
         didSet {
-            guard self.isEnabled != oldValue else { return }
+            guard isEnabled != oldValue else { return }
             
-            if self.isEnabled {
+            if isEnabled {
                 NotificationCenter.default.addObserver(self, selector: #selector(applicationDidUpdate(_:)), name: NSApplication.didUpdateNotification, object: nil)
             } else {
                 NotificationCenter.default.removeObserver(self, name: NSApplication.didUpdateNotification, object: nil)
@@ -115,7 +115,6 @@ private final class TouchBarValidator {
     
     
     deinit {
-        self.isEnabled = false  // remove observer if needed
         self.validationTimer?.invalidate()
     }
     
@@ -139,7 +138,7 @@ private final class TouchBarValidator {
         
         guard let firstResponder = NSApp.mainWindow?.firstResponder else { return }
         
-        for responder in sequence(first: firstResponder, next: { $0.nextResponder }) {
+        for responder in sequence(first: firstResponder, next: \.nextResponder) {
             responder.touchBar?.validateVisibleItems()
         }
     }
@@ -154,27 +153,27 @@ private final class TouchBarValidator {
             else { return }
         
         // skip validation for specific events just like NSToolbar does
-        //   -> See Apple's API reference for NSToolbar's `validateVisibleItems()` to see which events should be skipped:
-        //        cf. https://developer.apple.com/reference/appkit/nstoolbar/1516947-validatevisibleitems
+        // -> See Apple's API reference for NSToolbar's `validateVisibleItems()` to see which events should be skipped:
+        //      cf. https://developer.apple.com/reference/appkit/nstoolbar/1516947-validatevisibleitems
         let isLazy: Bool
         switch event.type {
-        case .leftMouseDragged,
-             .rightMouseDragged,
-             .otherMouseDragged,
-             .mouseEntered,
-             .mouseExited,
-             .scrollWheel,
-             .cursorUpdate,
-             .keyDown,
-             .mouseMoved:
-            return
+            case .leftMouseDragged,
+                 .rightMouseDragged,
+                 .otherMouseDragged,
+                 .mouseEntered,
+                 .mouseExited,
+                 .scrollWheel,
+                 .cursorUpdate,
+                 .keyDown,
+                 .mouseMoved:
+                return
             
-        case .keyUp,
-             .flagsChanged:
-            isLazy = true
+            case .keyUp,
+                 .flagsChanged:
+                isLazy = true
             
-        default:
-            isLazy = false
+            default:
+                isLazy = false
         }
         
         // schedule validation with delay
@@ -209,15 +208,15 @@ extension NSCustomTouchBarItem: NSValidatedUserInterfaceItem {
         guard
             let control = self.control,
             let action = control.action,
-            let validator = NSApp.target(forAction: action, to: control.target, from: self)
+            let validator = NSApp.target(forAction: action, to: control.target, from: self) as AnyObject?
             else { return }
         
         switch validator {
-        case let validator as TouchBarItemValidations:
-            control.isEnabled = validator.validateTouchBarItem(self)
-        case let validator as NSUserInterfaceValidations:
-            control.isEnabled = validator.validateUserInterfaceItem(self)
-        default: break
+            case let validator as TouchBarItemValidations:
+                control.isEnabled = validator.validateTouchBarItem(self)
+            case let validator as NSUserInterfaceValidations:
+                control.isEnabled = validator.validateUserInterfaceItem(self)
+            default: break
         }
     }
     

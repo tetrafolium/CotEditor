@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -54,14 +54,14 @@ extension Document {
         
         set {
             switch newValue {
-            case let textStorage as NSTextStorage:
-                self.insert(string: textStorage.string, at: .replaceAll)
+                case let textStorage as NSTextStorage:
+                    self.insert(string: textStorage.string, at: .replaceAll)
                 
-            case let string as String:
-                self.insert(string: string, at: .replaceAll)
+                case let string as String:
+                    self.insert(string: string, at: .replaceAll)
                 
-            default:
-                assertionFailure()
+                default:
+                    assertionFailure()
             }
         }
     }
@@ -98,7 +98,7 @@ extension Document {
     /// length of document (integer)
     @objc var length: Int {
         
-        return self.string.utf16.count
+        return (self.string as NSString).length
     }
     
     
@@ -107,28 +107,28 @@ extension Document {
         
         get {
             switch self.lineEnding {
-            case .lf:
-                return OSALineEnding.lf
-            case .cr:
-                return OSALineEnding.cr
-            case .crlf:
-                return OSALineEnding.crlf
-            default:
-                return OSALineEnding.lf
+                case .lf:
+                    return .lf
+                case .cr:
+                    return .cr
+                case .crlf:
+                    return .crlf
+                default:
+                    return .lf
             }
         }
         
         set {
             let type: LineEnding = {
                 switch newValue {
-                case OSALineEnding.lf:
-                    return .lf
-                case OSALineEnding.cr:
-                    return .cr
-                case OSALineEnding.crlf:
-                    return .crlf
-                default:
-                    return .lf
+                    case .lf:
+                        return .lf
+                    case .cr:
+                        return .cr
+                    case .crlf:
+                        return .crlf
+                    default:
+                        return .lf
                 }
             }()
             self.changeLineEnding(to: type)
@@ -171,7 +171,7 @@ extension Document {
         }
         
         set {
-            self.viewController?.wrapsLines = newValue
+            self.setViewControllerValue(newValue, for: \.wrapsLines)
         }
     }
     
@@ -184,7 +184,7 @@ extension Document {
         }
         
         set {
-            self.viewController?.tabWidth = newValue
+            self.setViewControllerValue(newValue, for: \.tabWidth)
         }
     }
     
@@ -197,7 +197,7 @@ extension Document {
         }
         
         set {
-            self.viewController?.isAutoTabExpandEnabled = newValue
+            self.setViewControllerValue(newValue, for: \.isAutoTabExpandEnabled)
         }
     }
     
@@ -206,7 +206,7 @@ extension Document {
     // MARK: AppleScript Handler
     
     /// handle the Convert AppleScript by changing the text encoding and converting the text
-    @objc func handleConvert(_ command: NSScriptCommand) -> Bool {
+    @objc func handleConvert(_ command: NSScriptCommand) -> NSNumber {
         
         guard
             let arguments = command.evaluatedArguments,
@@ -231,7 +231,7 @@ extension Document {
     
     
     /// handle the Convert AppleScript by changing the text encoding and reinterpreting the text
-    @objc func handleReinterpret(_ command: NSScriptCommand) -> Bool {
+    @objc func handleReinterpret(_ command: NSScriptCommand) -> NSNumber {
         
         guard
             let arguments = command.evaluatedArguments,
@@ -256,16 +256,13 @@ extension Document {
             let searchString = arguments["targetString"] as? String, !searchString.isEmpty
             else { return false }
         
-        let wholeString = self.string
-        
-        guard !wholeString.isEmpty else { return false }
-        
         let options = NSString.CompareOptions(scriptingArguments: arguments)
         let isWrapSearch = (arguments["wrapSearch"] as? Bool) ?? false
         
         // perform find
-        guard let foundRange = (wholeString as NSString).range(of: searchString, selectedRange: self.selectedRange,
-                                                               options: options, isWrapSearch: isWrapSearch)
+        let string = self.string as NSString
+        guard let foundRange = string.range(of: searchString, selectedRange: self.selectedRange,
+                                            options: options, isWrapSearch: isWrapSearch)
             else { return false }
         
         self.selectedRange = foundRange
@@ -283,47 +280,54 @@ extension Document {
             let replacementString = arguments["newString"] as? String
             else { return 0 }
         
-        let wholeString = self.string
-        
-        guard !wholeString.isEmpty else { return 0 }
-        
         let options = NSString.CompareOptions(scriptingArguments: arguments)
         let isWrapSearch = (arguments["wrapSearch"] as? Bool) ?? false
         let isAll = (arguments["all"] as? Bool) ?? false
         
+        let string = self.string
+        
+        guard !string.isEmpty else { return 0 }
+        
         // perform replacement
         if isAll {
-            let newWholeString = NSMutableString(string: wholeString)
-            let numberOfReplacements = newWholeString.replaceOccurrences(of: searchString, with: replacementString,
-                                                                         options: options, range: wholeString.nsRange)
+            let mutableString = NSMutableString(string: string)
+            let count: Int
+            if options.contains(.regularExpression) {
+                let regexOptions: NSRegularExpression.Options = options.contains(.caseInsensitive) ? [.caseInsensitive] : []
+                guard let regex = try? NSRegularExpression(pattern: searchString, options: regexOptions.union(.anchorsMatchLines)) else { return 0 }
+                
+                count = regex.replaceMatches(in: mutableString, range: string.nsRange, withTemplate: replacementString)
+            } else {
+                count = mutableString.replaceOccurrences(of: searchString, with: replacementString, options: options, range: string.nsRange)
+            }
             
-            guard numberOfReplacements > 0 else { return 0 }
+            guard count > 0 else { return 0 }
             
-            self.insert(string: newWholeString as String, at: .replaceAll)
+            self.insert(string: mutableString as String, at: .replaceAll)
             self.selectedRange = NSRange()
             
-            return numberOfReplacements as NSNumber
+            return count as NSNumber
             
         } else {
-            guard let foundRange = (wholeString as NSString).range(of: searchString, selectedRange: self.selectedRange,
-                                                                   options: options, isWrapSearch: isWrapSearch)
+            guard let foundRange = (string as NSString).range(of: searchString, selectedRange: self.selectedRange,
+                                                              options: options, isWrapSearch: isWrapSearch)
                 else { return 0 }
             
             let replacedString: String
             if options.contains(.regularExpression) {
                 let regexOptions: NSRegularExpression.Options = options.contains(.caseInsensitive) ? .caseInsensitive : []
                 guard
-                    let regex = try? NSRegularExpression(pattern: searchString, options: regexOptions),
-                    let match = regex.firstMatch(in: wholeString, options: .withoutAnchoringBounds, range: foundRange)
+                    let regex = try? NSRegularExpression(pattern: searchString, options: regexOptions.union(.anchorsMatchLines)),
+                    let match = regex.firstMatch(in: string, options: .withoutAnchoringBounds, range: foundRange)
                     else { return 0 }
                 
-                replacedString = regex.replacementString(for: match, in: wholeString, offset: 0, template: replacementString)
+                replacedString = regex.replacementString(for: match, in: string, offset: 0, template: replacementString)
             } else {
                 replacedString = replacementString
             }
             
             self.selectedRange = foundRange
-            self.selection.contents = replacedString  // TextSelection's `setContents:` accepts also String for its argument
+            self.selection.contents = replacedString  // TextSelection's `setContents:` accepts also String for its argument.
             
             return 1
         }
@@ -338,23 +342,57 @@ extension Document {
     
     
     /// return sting in the specified range
-    func handleString(_ command: NSScriptCommand) -> String? {
+    @objc func handleString(_ command: NSScriptCommand) -> String? {
         
         guard
             let arguments = command.evaluatedArguments,
             let rangeArray = arguments["range"] as? [Int], rangeArray.count == 2
             else { return nil }
         
-        let location = rangeArray[0]
-        let length = max(rangeArray[1], 1)
+        let fuzzyRange = FuzzyRange(location: rangeArray[0], length: max(rangeArray[1], 1))
         
-        guard let range = string.range(location: location, length: length) else { return nil }
+        guard let range = string.range(in: fuzzyRange) else { return nil }
         
         return (self.string as NSString).substring(with: range)
     }
     
+    
+    
+    // MARK: Private Methods
+    
+    /// Set the value to DocumentViewController but lazily by waiting the DocumentViewController is attached if it is not available yet.
+    ///
+    /// When document's properties are set in the document creation phase like in the following code,
+    /// those setters are invoked while `self.viewController` is still `nil`.
+    /// Therefore, to avoid ignoring initialization, this method asynchronously waits for the DocumentViewController is available, and then sets the value.
+    ///
+    ///     tell application "CotEditor"
+    ///         make new document with properties { name: "Untitled.txt", tab width: 16 }
+    ///     end tell
+    ///
+    /// - Parameters:
+    ///   - value: The value to set.
+    ///   - keyPath: The keyPath of the DocumentViewController to set the value.
+    private func setViewControllerValue<Value>(_ value: Value, for keyPath: ReferenceWritableKeyPath<DocumentViewController, Value>) {
+        
+        if let viewController = self.viewController {
+            viewController[keyPath: keyPath] = value
+            return
+        }
+        
+        weak var observer: NSObjectProtocol?
+        observer = NotificationCenter.default.addObserver(forName: EditorTextView.didBecomeFirstResponderNotification, object: nil, queue: .main) { [weak self] _ in
+            guard let viewController = self?.viewController else { return }
+            
+            if let observer = observer {
+                NotificationCenter.default.removeObserver(observer)
+            }
+            
+            viewController[keyPath: keyPath] = value
+        }
+    }
+    
 }
-
 
 
 
@@ -371,13 +409,13 @@ private extension NSString.CompareOptions {
         self.init()
         
         if isRegex {
-            self.update(with: .regularExpression)
+            self.formUnion(.regularExpression)
         }
         if ignoresCase {
-            self.update(with: .caseInsensitive)
+            self.formUnion(.caseInsensitive)
         }
         if isBackwards {
-            self.update(with: .backwards)
+            self.formUnion(.backwards)
         }
     }
     
@@ -386,19 +424,37 @@ private extension NSString.CompareOptions {
 
 private extension NSString {
     
-    /// find and return the range of the first occurrence starting from the given selectedRange
+    /// Find the range of the first occurrence starting from the given selectedRange.
+    ///
+    /// - Parameters:
+    ///   - searchString: The string to search for.
+    ///   - selectedRange: The range to search in.
+    ///   - options: The search option.
+    ///   - isWrapSearch: Whether the search should wrap.
+    /// - Returns: The range of found or `nil` if not found.
     func range(of searchString: String, selectedRange: NSRange, options: NSString.CompareOptions, isWrapSearch: Bool) -> NSRange? {
         
-        let targetRange: NSRange = {
-            if options.contains(.backwards), !options.contains(.regularExpression) {
-                return NSRange(location: 0, length: selectedRange.location)
-            }
-            return NSRange(selectedRange.upperBound..<self.length)
-        }()
+        guard self.length > 0 else { return nil }
         
-        var foundRange = self.range(of: searchString, options: options, range: targetRange)
-        if foundRange.location == NSNotFound, isWrapSearch {
-            foundRange = self.range(of: searchString, options: options)
+        let targetRange = (options.contains(.backwards) && !options.contains(.regularExpression))
+            ? NSRange(..<selectedRange.lowerBound)
+            : NSRange(selectedRange.upperBound..<self.length)
+        
+        var foundRange: NSRange = .notFound
+        if options.contains(.regularExpression) {
+            let regexOptions: NSRegularExpression.Options = options.contains(.caseInsensitive) ? .caseInsensitive : []
+            guard let regex = try? NSRegularExpression(pattern: searchString, options: regexOptions.union(.anchorsMatchLines)) else { return nil }
+            
+            foundRange = regex.rangeOfFirstMatch(in: self as String, options: .withoutAnchoringBounds, range: targetRange)
+            if foundRange == .notFound, isWrapSearch {
+                foundRange = regex.rangeOfFirstMatch(in: self as String, options: .withoutAnchoringBounds, range: self.range)
+            }
+            
+        } else {
+            foundRange = self.range(of: searchString, options: options, range: targetRange)
+            if foundRange == .notFound, isWrapSearch {
+                foundRange = self.range(of: searchString, options: options)
+            }
         }
         
         guard foundRange.location != NSNotFound else { return nil }

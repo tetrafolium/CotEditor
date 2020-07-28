@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2015-2018 1024jp
+//  © 2015-2019 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -54,15 +54,18 @@ final class TextFind {
         
         case regularExpression(reason: String)
         case emptyFindString
+        case emptyInSelectionSearch
         
         
         var errorDescription: String? {
             
             switch self {
-            case .regularExpression:
-                return "Invalid regular expression".localized
-            case .emptyFindString:
-                return "Empty find string".localized
+                case .regularExpression:
+                    return "Invalid regular expression".localized
+                case .emptyFindString:
+                    return "Empty find string".localized
+                case .emptyInSelectionSearch:
+                    return "The option “in selection” is enabled, although nothing is selected.".localized
             }
         }
         
@@ -70,10 +73,12 @@ final class TextFind {
         var recoverySuggestion: String? {
             
             switch self {
-            case .regularExpression(let reason):
-                return reason
-            case .emptyFindString:
-                return "Input text to find.".localized
+                case .regularExpression(let reason):
+                    return reason
+                case .emptyFindString:
+                    return "Input text to find.".localized
+                case .emptyInSelectionSearch:
+                    return "Select the search scope in document or disable “in selection” option.".localized
             }
         }
         
@@ -119,27 +124,28 @@ final class TextFind {
             throw TextFind.Error.emptyFindString
         }
         
+        guard !inSelection || selectedRanges.contains(where: { !$0.isEmpty }) else {
+            throw TextFind.Error.emptyInSelectionSearch
+        }
+        
         switch mode {
-        case .textual(let options, _):
-            assert(!options.contains(.backwards))
+            case .textual(let options, _):
+                assert(!options.contains(.backwards))
+                
+                self.regex = nil
             
-            self.regex = nil
-            
-        case .regularExpression(let options, _):
-            let sanitizedFindString: String = {
+            case .regularExpression(let options, _):
                 // replace `\v` with `\u000b`
-                //   -> Because NSRegularExpression cannot handle `\v` correctly. (2017-07 on macOS 10.12)
+                // -> Because NSRegularExpression cannot handle `\v` correctly. (2017-07 on macOS 10.12)
                 //   cf. https://github.com/coteditor/CotEditor/issues/713
-                if findString.contains("\\v") {
-                    return findString.replacingOccurrences(of: "(?<!\\\\)\\\\v", with: "\\\\u000b", options: .regularExpression)
-                }
-                return findString
-            }()
-            
-            do {
-                self.regex = try NSRegularExpression(pattern: sanitizedFindString, options: options)
-            } catch {
-                throw TextFind.Error.regularExpression(reason: error.localizedDescription)
+                let sanitizedFindString: String = findString.contains("\\v")
+                    ? findString.replacingOccurrences(of: "(?<!\\\\)\\\\v", with: "\\\\u000b", options: .regularExpression)
+                    : findString
+                
+                do {
+                    self.regex = try NSRegularExpression(pattern: sanitizedFindString, options: options)
+                } catch {
+                    throw TextFind.Error.regularExpression(reason: error.localizedDescription)
             }
         }
         
@@ -181,14 +187,14 @@ final class TextFind {
         let startLocation = forward ? selectedRange.upperBound : selectedRange.location
         
         var forwardMatches = [NSRange]()  // matches after the start location
-        let forwardRange = NSRange(startLocation..<string.utf16.count)
+        let forwardRange = NSRange(startLocation..<(self.string as NSString).length)
         self.enumerateMatchs(in: [forwardRange], using: { (matchedRange: NSRange, match: NSTextCheckingResult?, stop) in
             forwardMatches.append(matchedRange)
         })
         
         var wrappedMatches = [NSRange]()  // matches before the start location
         var intersectionMatches = [NSRange]()  // matches including the start location
-        self.enumerateMatchs(in: [self.string.nsRange], using: { (matchedRange: NSRange, match: NSTextCheckingResult?, stop) in
+        self.enumerateMatchs(in: [(self.string as NSString).range], using: { (matchedRange: NSRange, match: NSTextCheckingResult?, stop) in
             if matchedRange.location >= startLocation {
                 stop = true
                 return
@@ -224,6 +230,8 @@ final class TextFind {
     ///   - wrapped: Whether the search was wrapped to find the result.
     func findInSelection(forward: Bool) -> (range: NSRange?, count: Int, wrapped: Bool) {
         
+        assert(self.inSelection)
+        
         var matches = [NSRange]()
         self.enumerateMatchs(in: self.selectedRanges, using: { (matchedRange, _, _) in
             matches.append(matchedRange)
@@ -246,29 +254,29 @@ final class TextFind {
         let selectedRange = self.selectedRanges.first!
         
         switch self.mode {
-        case let .textual(options, fullWord):
-            let matchedRange = (string as NSString).range(of: self.findString, options: options, range: selectedRange)
-            guard matchedRange.location != NSNotFound else { return nil }
-            guard !fullWord || self.isFullWord(range: matchedRange) else { return nil }
+            case let .textual(options, fullWord):
+                let matchedRange = (string as NSString).range(of: self.findString, options: options, range: selectedRange)
+                guard matchedRange.location != NSNotFound else { return nil }
+                guard !fullWord || self.isFullWord(range: matchedRange) else { return nil }
+                
+                return ReplacementItem(string: replacementString, range: matchedRange)
             
-            return ReplacementItem(string: replacementString, range: matchedRange)
-            
-        case .regularExpression:
-            let regex = self.regex!
-            guard let match = regex.firstMatch(in: string, options: [.withTransparentBounds, .withoutAnchoringBounds], range: selectedRange) else { return nil }
-            
-            let template = self.replacementString(from: replacementString)
-            
-            let replacedString = regex.replacementString(for: match, in: string, offset: 0, template: template)
-            
-            return ReplacementItem(string: replacedString, range: match.range)
+            case .regularExpression:
+                let regex = self.regex!
+                guard let match = regex.firstMatch(in: string, options: [.withTransparentBounds, .withoutAnchoringBounds], range: selectedRange) else { return nil }
+                
+                let template = self.replacementString(from: replacementString)
+                
+                let replacedString = regex.replacementString(for: match, in: string, offset: 0, template: template)
+                
+                return ReplacementItem(string: replacedString, range: match.range)
         }
     }
     
     
     /// Find all matches in the scopes.
     ///
-    /// - Parameter
+    /// - Parameters:
     ///   - block: The Block enumerates the matches.
     ///   - matches: The array of matches including group matches.
     ///   - stop: The Block can set the value to true to stop further processing of the array.
@@ -330,17 +338,17 @@ final class TextFind {
                 length = scopeRange.length
             } else {
                 // build replacementString
-                var replacedString = (self.string as NSString).substring(with: scopeRange)
+                let replacedString = NSMutableString(string: (self.string as NSString).substring(with: scopeRange))
                 for item in items.reversed() {
                     block(.replacementProgress, &ioStop)
                     if ioStop { return }
                     
-                    let substringRange = NSRange(location: item.range.location - scopeRange.location, length: item.range.length)
-                    guard let range = Range(substringRange, in: replacedString) else { assertionFailure(); continue }
-                    replacedString.replaceSubrange(range, with: item.string)
+                    // -> Do not convert to Range<Index>. It can fail when the range is smaller than String.Character.
+                    let substringRange = item.range.shifted(offset: -scopeRange.location)
+                    replacedString.replaceCharacters(in: substringRange, with: item.string)
                 }
-                replacementItems.append(ReplacementItem(string: replacedString, range: scopeRange))
-                length = (replacedString as NSString).length
+                replacementItems.append(ReplacementItem(string: replacedString.copy() as! String, range: scopeRange))
+                length = replacedString.length
             }
             
             // build selectedRange
@@ -367,10 +375,10 @@ final class TextFind {
     private func replacementString(from string: String) -> String {
         
         switch self.mode {
-        case .regularExpression(_, let unescapes) where unescapes:
-            return string.unescaped
-        default:
-            return string
+            case .regularExpression(_, let unescapes) where unescapes:
+                return string.unescaped
+            default:
+                return string
         }
     }
     
@@ -386,11 +394,11 @@ final class TextFind {
     private func enumerateMatchs(in ranges: [NSRange], using block: (_ matchedRange: NSRange, _ match: NSTextCheckingResult?, _ stop: inout Bool) -> Void, scopeCompletionHandler: ((NSRange) -> Void) = { _ in }) {
         
         switch self.mode {
-        case .textual:
-            self.enumerateTextualMatchs(in: ranges, using: block, scopeCompletionHandler: scopeCompletionHandler)
+            case .textual:
+                self.enumerateTextualMatchs(in: ranges, using: block, scopeCompletionHandler: scopeCompletionHandler)
             
-        case .regularExpression:
-            self.enumerateRegularExpressionMatchs(in: ranges, using: block, scopeCompletionHandler: scopeCompletionHandler)
+            case .regularExpression:
+                self.enumerateRegularExpressionMatchs(in: ranges, using: block, scopeCompletionHandler: scopeCompletionHandler)
         }
     }
     

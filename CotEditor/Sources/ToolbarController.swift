@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -31,14 +31,14 @@ extension LineEnding {
     init?(index: Int) {
         
         switch index {
-        case 0:
-            self = .lf
-        case 1:
-            self = .cr
-        case 2:
-            self = .crlf
-        default:
-            return nil
+            case 0:
+                self = .lf
+            case 1:
+                self = .cr
+            case 2:
+                self = .crlf
+            default:
+                return nil
         }
     }
     
@@ -46,14 +46,14 @@ extension LineEnding {
     var index: Int {
         
         switch self {
-        case .lf:
-            return 0
-        case .cr:
-            return 1
-        case .crlf:
-            return 2
-        default:
-            return -1
+            case .lf:
+                return 0
+            case .cr:
+                return 1
+            case .crlf:
+                return 2
+            default:
+                return -1
         }
     }
     
@@ -101,18 +101,10 @@ final class ToolbarController: NSObject {
     @IBOutlet private weak var syntaxPopupButton: NSPopUpButton?
     
     @IBOutlet private weak var shareToolbarItem: NSToolbarItem?
-
+    
     
     
     // MARK: -
-    // MARK: Lifecycle
-    
-    deinit {
-        self.recentStyleNamesObserver?.invalidate()
-    }
-    
-    
-    
     // MARK: Object Methods
     
     override func awakeFromNib() {
@@ -123,22 +115,17 @@ final class ToolbarController: NSObject {
         self.buildSyntaxPopupButton()
         
         // setup Share toolbar item
-        // -> Share button action must be called on mouseDown.
+        // -> The Share button action must be called on `mouseDown`.
         (self.shareToolbarItem!.view as! NSButton).sendAction(on: .leftMouseDown)
-        if #available(macOS 10.13, *) {
-            self.shareToolbarItem!.menuFormRepresentation = NSDocumentController.shared.standardShareMenuItem()
-        } else {
-            self.shareToolbarItem!.menuFormRepresentation = ShareMenuItem()
-        }
+        self.shareToolbarItem!.menuFormRepresentation = NSDocumentController.shared.standardShareMenuItem()
         
         // observe popup menu line-up change
         NotificationCenter.default.addObserver(self, selector: #selector(buildEncodingPopupButton), name: didUpdateSettingListNotification, object: EncodingManager.shared)
         NotificationCenter.default.addObserver(self, selector: #selector(buildSyntaxPopupButton), name: didUpdateSettingListNotification, object: SyntaxManager.shared)
         
+        self.recentStyleNamesObserver?.invalidate()
         self.recentStyleNamesObserver = UserDefaults.standard.observe(key: .recentStyleNames) { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.buildSyntaxPopupButton()
-            }
+            self?.buildSyntaxPopupButton()
         }
     }
     

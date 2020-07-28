@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2017-2018 1024jp
+//  © 2017-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ final class TokenTextView: NSTextView {
     override func deleteBackward(_ sender: Any?) {
         
         guard
-            self.selectedRange.length == 0,
+            self.selectedRange.isEmpty,
             self.selectedRange.location > 0,
             let effectiveRange = self.layoutManager?.effectiveRange(of: .token, at: self.selectedRange.location - 1),
             effectiveRange.upperBound == self.selectedRange.location
@@ -178,30 +178,33 @@ final class TokenTextView: NSTextView {
 
 
 
-extension NSMenu {
+extension TokenRepresentable {
     
-    /// add a menu item to insert variable to TokenTextView
-    func addItems<T: TokenRepresentable>(for variables: [T], target: TokenTextView?) {
+    /// Return a menu item to insert variable to TokenTextView.
+    ///
+    /// - Parameter target: The action target.
+    /// - Returns: A menu item.
+    func insertionMenuItem(target: TokenTextView? = nil) -> NSMenuItem {
         
         let fontSize = NSFont.systemFontSize(for: .small)
         let font = NSFont.menuFont(ofSize: fontSize)
-        let paragraphStyle = NSMutableParagraphStyle()
+        let paragraphStyle = NSParagraphStyle.default.mutable
         paragraphStyle.firstLineHeadIndent = 2 * fontSize
         paragraphStyle.headIndent = 2 * fontSize
         
-        for variable in variables {
-            let token = NSAttributedString(string: variable.token, attributes: [.font: font])
-            let description = NSAttributedString(string: "\n" + variable.localizedDescription, attributes: [.font: font,
-                                                                                                            .foregroundColor: NSColor.gray,
-                                                                                                            .paragraphStyle: paragraphStyle])
-            let item = NSMenuItem()
-            item.target = target
-            item.action = #selector(TokenTextView.insertVariable)
-            item.attributedTitle = token + description
-            item.representedObject = variable.token
-            
-            self.addItem(item)
-        }
+        let token = NSAttributedString(string: self.token, attributes: [.font: font])
+        let description = NSAttributedString(string: self.localizedDescription,
+                                             attributes: [.font: font,
+                                                          .foregroundColor: NSColor.secondaryLabelColor,
+                                                          .paragraphStyle: paragraphStyle])
+        
+        let item = NSMenuItem()
+        item.target = target
+        item.action = #selector(TokenTextView.insertVariable)
+        item.attributedTitle = [token, description].joined(separator: .newLine)
+        item.representedObject = self.token
+        
+        return item
     }
     
 }

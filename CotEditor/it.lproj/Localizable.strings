@@ -10,7 +10,7 @@
  
  ------------------------------------------------------------------------------
  
- © 2016-2018 CotEditor Project
+ © 2016-2020 CotEditor Project
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -54,11 +54,6 @@
 "What’s New in CotEditor %@" = "Cosa c’è di nuovo in CotEditor %@";  // %@ is version number
 
 
-// Share menu
-"Share" = "Condividi";
-"No Document" = "Nessun documento";
-
-
 
 /* MARK: AppDelegate */
 // Format - Syntax coloring menu item title
@@ -72,8 +67,8 @@
 "Open as Text File" = "Apri come file di testo";
 "A new theme named “%@” has been successfully installed." = "Un nuovo tema dal nome “%@” è stato installato correttamente.";
 
-// Window title of bug report
-"Bug Report" = "Segnala errori";
+// Window title of issue report
+"Issue Report" = "Segnala un problema";
 
 
 
@@ -89,7 +84,12 @@
 "%@ strings replaced." = "%@ stringhe sostituite.";
 "Invalid regular expression" = "Espressione regolare non valida";
 "Empty find string" = "Stringa di ricerca vuota";
+"The option “in selection” is enabled, although nothing is selected." = "L’opzione “nella selezione” è attiva, ma non è stato selezionato nulla.";
 "Input text to find." = "Inserire il testo da cercare.";
+"Select the search scope in document or disable “in selection” option." = "Selezionare l’ambito di ricerca nel documento, oppure disabilitare l’opzione “nella selezione”.";
+
+// accessibility announcement
+"Search wrapped." = "Ricerca dall'inizio";  // announced when the search restarted from the beginning.
 
 
 /* MARK: FindPanelController */
@@ -120,11 +120,11 @@
 
 /* MARK: Document Controller */
 // File open accessory's menu item title
-"Auto-Detect" = "Rilevamento automatico";
+"Automatic" = "Automatica";
 
 // Binary file alert
 "The file “%@” doesn’t appear to be text data." = "Il file “%@” non sembra essere di testo.";
-"The file is %@.\n\nDo you really want to open the file?" = "Si desidera veramente aprire il file %@?";
+"The file appears to be %@.\n\nDo you really want to open the file?" = "Si desidera veramente aprire il file %@?";  // FIXME: is -> appears to be
 
 // Large file alert
 "The file “%@” has a size of %@." = "Il file “%@” è grande %@.";
@@ -177,6 +177,7 @@
 /* MARK: Touch Bar */
 // Touch bar item labels -Document View
 "Invisibles" = "Invisibili";
+"Indent Guides" = "Guide di indentazione";
 "Wrap Lines" = "Aapo automatico";
 
 // Touch bar item labels -Text View
@@ -197,7 +198,7 @@
 // Summary item names
 "Color" = "Colore";
 "Line Number" = "Numero riga";
-"Invisible Characters" = "Caratteri invisibili";
+"Invisibles" = "Caratteri invisibili";
 "Print Header" = "Stampa intestazione";
 "Primary Header" = "Intestazione primaria";
 "Primary Header Alignment" = "Allineamento intestazione primaria";
@@ -216,7 +217,6 @@
 "Same as Document’s Setting" = "Come da documento";
 "Black and White" = "Bianco e nero";
 "Print" = "Stampa";
-"Print All" = "Stampa tutto";
 "Syntax Name" = "Nome sintassi";
 "Document Name" = "Nome documento";
 "File Path" = "Percorso file";
@@ -268,6 +268,7 @@
 "Text" = "Testo";
 "Copy as Rich Text" = "Copia come Rich Text";
 "Select All" = "Seleziona tutto";
+"Straighten Quotes" = "Raddrizza virgolette";
 
 
 
@@ -281,14 +282,16 @@
 "Show Status Bar" = "Mostra barra di stato";
 "Hide Navigation Bar" = "Nascondi barra di navigazione";
 "Show Navigation Bar" = "Mostra barra di navigazione";
-"Hide Invisible Characters" = "Nascondi caratteri invisibili";
-"Show Invisible Characters" = "Mostra caratteri invisibili";
+"Hide Invisibles" = "Nascondi caratteri invisibili";
+"Show Invisibles" = "Mostra caratteri invisibili";
 "Hide Page Guide" = "Nascondi guida pagina";
 "Show Page Guide" = "Mostra guida pagina";
+"Hide Indent Guides" = "Nascondi le guide per l’indentazione";
+"Show Indent Guides" = "Mostra le guide per l’indentazione";
 "Unwrap Lines" = "Rimuovi a capo automatico";
 "Wrap Lines" = "A capo automatico";
 
-// Tooltip for "Show Invisible Characters" menu item
+// Tooltip for "Show Invisibles" menu item
 "Show or hide invisible characters in document" = "Mostra o nascondi i caratteri invisibili nel documento";
 "To show invisible characters, set them in Preferences" = "Per visualizzare i caratteri invisibili, impostarli nelle Preferenze";
 
@@ -325,6 +328,7 @@
 "Coloring text…" = "Colorando testo…";
 "Please wait for a while." = "Si prega di attendere.";
 "Extracting %@…" = "Estrazione di %@…";
+"Preparing coloring…" = "Preparo la colorazione…";
 "Applying colors to text" = "Applicazione dei colori al testo";
 "keywords" = "Parole chiave";
 "commands" = "Comandi";
@@ -349,7 +353,7 @@
 
 // General pane
 // Autosave setting update alert
-"The change will be applied first at the next launch." = "La modifica verrà applicata al prossimo avvio.";
+"The change will be applied first on the next launch." = "La modifica verrà applicata al prossimo avvio.";
 "Do you want to restart CotEditor now?" = "Si desidera riavviare CotEditor adesso?";
 "Restart Now" = "Riavvia ora";
 "Later" = "Più tardi";
@@ -371,12 +375,6 @@
 
 
 // Format pane
-// Encoding menu alert
-"Are you sure you want to change to “%@”?" = "Si è sicuri di voler cambiare in “%@”?";
-"The default “Auto-Detect” is recommended for most cases." = "Nella maggior parte dei casi si consiglia di utilizzare la funzione di default di “Rilevamento Automatico”.";
-"Change to “%@”" = "Cambia in “%@”";
-"Revert to “Auto-Detect”" = "Ritorna a “Rilevamento Automatico”";
-
 // Installed syntax styles action menu items
 "Duplicate “%@”…" = "Duplica “%@”…";
 "Export “%@”…" = "Esporta “%@”…";
@@ -506,7 +504,7 @@
 "“%@” includes the Command key." = "La combinazione “%@” include il tasto Command.";
 "Please choose another key." = "Si prega di sceglierne un altro.";
 "Single type is invalid for a shortcut." = "Un solo tasto non è una scorciatoia valida.";
-"Please combine with another keys." = "Si prega di abbinarlo ad altri tasti.";
+"Please combine with other keys." = "Si prega di abbinarlo ad altri tasti.";
 
 
 
@@ -533,14 +531,14 @@
 
 // Script file error recovery suggestions
 "Check the script file." = "Verificare il file dello script.";
-"Check permission of the script file." = "Verificare i permessi dello script.";
+"Check the permission of the script file." = "Verificare i permessi dello script.";
 
 
 
 /* MARK: FileDropComposer */
 // Descriptions about variables in the file drop feature
 "The dropped file absolute path." = "Percorso assoluto del file trascinato.";
-"The relative path between dropped file and the document." = "Percorso relativo tra il file trascinato ed il documento.";
+"The relative path between the dropped file and the document." = "Percorso relativo tra il file trascinato ed il documento.";
 "The dropped file’s name including extension (if exists)." = "Il nome del file trascinato include l’estensione (se presente).";
 "The dropped file’s name without extension." = "Il nome del file trascinato non ha estensione.";
 "The dropped file’s extension." = "Estensione del file trascinato.";
@@ -549,6 +547,7 @@
 "The parent directory name of dropped file." = "Nome della cartella superiore del file trascinato.";
 "(If the dropped file is an image) image width." = "Larghezza dell’immagine (se il file trascinato è un’immagine).";
 "(If the dropped file is an image) image height." = "Altezza dell’immagine (se il file trascinato è un’immagine).";
+"(If the dropped file is a text file) file content." = "(Se il file rilasciato è di testo) contenuto del file.";
 
 
 

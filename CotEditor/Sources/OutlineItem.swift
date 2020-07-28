@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -37,18 +37,10 @@ struct OutlineItem: Equatable {
         static let underline = Style(rawValue: 1 << 2)
     }
     
-
-    let title: String
-    let range: NSRange
-    let style: Style
     
-    
-    init(title: String, range: NSRange, style: Style = []) {
-        
-        self.title = title
-        self.range = range
-        self.style = style
-    }
+    var title: String
+    var range: NSRange
+    var style: Style = []
     
     
     var isSeparator: Bool {
@@ -83,7 +75,7 @@ extension OutlineItem {
 }
 
 
-extension Array where Element == OutlineItem {
+extension BidirectionalCollection where Element == OutlineItem {
     
     func indexOfItem(for characterRange: NSRange, allowsSeparator: Bool = true) -> Index? {
         

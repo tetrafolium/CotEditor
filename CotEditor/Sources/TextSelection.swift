@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -69,6 +69,8 @@ private extension OSAUnicodeNormalizationType {
 
 final class TextSelection: NSObject {
     
+    // MARK: Private Properties
+    
     private weak var document: Document?  // weak to avoid cycle retain
     
     
@@ -115,11 +117,11 @@ final class TextSelection: NSObject {
         set {
             guard let string: String = {
                 switch newValue {
-                case let storage as NSTextStorage:
-                    return storage.string
-                case let string as String:
-                    return string
-                default: return nil
+                    case let storage as NSTextStorage:
+                        return storage.string
+                    case let string as String:
+                        return string
+                    default: return nil
                 }
                 }() else { return }
             
@@ -143,7 +145,7 @@ final class TextSelection: NSObject {
                 let location = newValue?[0],
                 let length = newValue?[1],
                 let string = self.document?.string,
-                let range = string.range(location: location, length: length)
+                let range = string.range(in: FuzzyRange(location: location, length: length))
                 else { return }
             
             self.document?.selectedRange = range
@@ -152,43 +154,36 @@ final class TextSelection: NSObject {
     
     
     /// line range (location and length) of the selection (list type)
-    @objc var lineRange: Any? {
+    @objc var lineRange: [Int]? {
         
         get {
-            guard
-                let selectedRange = self.document?.selectedRange,
-                let string = self.document?.string else { return nil }
+            guard let document = self.document else { return nil }
             
-            let startLine = string.lineNumber(at: selectedRange.location)
-            let endLine = string.lineNumber(at: selectedRange.upperBound)
+            let selectedRange = document.selectedRange
+            let string = document.string
             
-            return [startLine,
-                    endLine - startLine + 1]
+            let start = string.lineNumber(at: selectedRange.lowerBound)
+            let end = string.lineNumber(at: selectedRange.upperBound)
+            
+            return [start, end - start + 1]
         }
         
         set {
-            let location: Int
-            let length: Int
+            guard
+                let lineRange = newValue,
+                (1...2).contains(lineRange.count),
+                // directly communicate with textView as you can skip line ending conversion for this command.
+                let textView = self.document?.textView
+                else { return }
             
-            switch newValue {
-            case let number as Int:
-                location = number
-                length = 1
-            case let range as [Int] where range.count == 2:
-                location = range[0]
-                length = range[1]
-            default:
-                return
-            }
+            let fuzzyRange = FuzzyRange(location: lineRange[0], length: lineRange[safe: 1] ?? 1)
             
-            // you can ignore actuall line ending type and directly comunicate with textView, as this handle just lines
-            guard let string = self.textView?.string else { return }
+            guard let range = textView.string.rangeForLine(in: fuzzyRange) else { return }
             
-            guard let range = string.rangeForLine(location: location, length: length) else { return }
-            
-            self.document?.selectedRange = range
+            textView.selectedRange = range
         }
     }
+    
     
     
     // MARK: AppleScript Handlers
@@ -265,13 +260,13 @@ final class TextSelection: NSObject {
         
         let type = FourCharCode(argument)
         switch type {
-        case OSACaseType.lowercase:
-            textView.lowercaseWord(command)
-        case OSACaseType.uppercase:
-            textView.uppercaseWord(command)
-        case OSACaseType.capitalized:
-            textView.capitalizeWord(command)
-        default: break
+            case OSACaseType.lowercase:
+                textView.lowercaseWord(command)
+            case OSACaseType.uppercase:
+                textView.uppercaseWord(command)
+            case OSACaseType.capitalized:
+                textView.capitalizeWord(command)
+            default: break
         }
     }
     
@@ -285,17 +280,17 @@ final class TextSelection: NSObject {
         
         let type = FourCharCode(argument)
         switch type {
-        case OSAWidthType.half:
-            textView.exchangeHalfwidthRoman(command)
-        case OSAWidthType.full:
-            textView.exchangeFullwidthRoman(command)
-        default: break
+            case OSAWidthType.half:
+                textView.exchangeHalfwidthRoman(command)
+            case OSAWidthType.full:
+                textView.exchangeFullwidthRoman(command)
+            default: break
         }
     }
     
     
     /// convert Japanese Hiragana in the selection to Katakana or vice versa
-    @objc func handleChangeKanaScript(_ command: NSScriptCommand) {
+    @objc func handleChangeKana(_ command: NSScriptCommand) {
         
         guard
             let argument = command.evaluatedArguments?["kanaType"] as? UInt32,
@@ -303,11 +298,11 @@ final class TextSelection: NSObject {
         
         let type = FourCharCode(argument)
         switch type {
-        case OSAKanaType.hiragana:
-            textView.exchangeHiragana(command)
-        case OSAKanaType.katakana:
-            textView.exchangeKatakana(command)
-        default: break
+            case OSAKanaType.hiragana:
+                textView.exchangeHiragana(command)
+            case OSAKanaType.katakana:
+                textView.exchangeKatakana(command)
+            default: break
         }
     }
     
@@ -321,21 +316,21 @@ final class TextSelection: NSObject {
         
         let type = FourCharCode(argument)
         switch type {
-        case OSAUnicodeNormalizationType.NFC:
-            textView.normalizeUnicodeWithNFC(command)
-        case OSAUnicodeNormalizationType.NFD:
-            textView.normalizeUnicodeWithNFD(command)
-        case OSAUnicodeNormalizationType.NFKC:
-            textView.normalizeUnicodeWithNFKC(command)
-        case OSAUnicodeNormalizationType.NFKD:
-            textView.normalizeUnicodeWithNFKD(command)
-        case OSAUnicodeNormalizationType.NFKCCF:
-            textView.normalizeUnicodeWithNFKCCF(command)
-        case OSAUnicodeNormalizationType.modifiedNFC:
-            textView.normalizeUnicodeWithModifiedNFC(command)
-        case OSAUnicodeNormalizationType.modifiedNFD:
-            textView.normalizeUnicodeWithModifiedNFD(command)
-        default: break
+            case OSAUnicodeNormalizationType.NFC:
+                textView.normalizeUnicodeWithNFC(command)
+            case OSAUnicodeNormalizationType.NFD:
+                textView.normalizeUnicodeWithNFD(command)
+            case OSAUnicodeNormalizationType.NFKC:
+                textView.normalizeUnicodeWithNFKC(command)
+            case OSAUnicodeNormalizationType.NFKD:
+                textView.normalizeUnicodeWithNFKD(command)
+            case OSAUnicodeNormalizationType.NFKCCF:
+                textView.normalizeUnicodeWithNFKCCF(command)
+            case OSAUnicodeNormalizationType.modifiedNFC:
+                textView.normalizeUnicodeWithModifiedNFC(command)
+            case OSAUnicodeNormalizationType.modifiedNFD:
+                textView.normalizeUnicodeWithModifiedNFD(command)
+            default: break
         }
     }
     

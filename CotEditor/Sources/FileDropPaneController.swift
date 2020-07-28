@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -33,11 +33,11 @@ final class FileDropPaneController: NSViewController, NSTableViewDelegate, NSTex
     @IBOutlet private var fileDropController: NSArrayController?
     @IBOutlet private weak var tableView: NSTableView?
     @IBOutlet private weak var variableInsertionMenu: NSPopUpButton?
-    @IBOutlet private var formatTextView: TokenTextView? {  // NSTextView cannot be weak
+    @IBOutlet private weak var formatTextView: TokenTextView? {
         
         didSet {
             // set tokenizer for format text view
-            self.formatTextView!.tokenizer = FileDropComposer.Token.tokenizer
+            formatTextView!.tokenizer = FileDropComposer.Token.tokenizer
         }
     }
     
@@ -53,9 +53,19 @@ final class FileDropPaneController: NSViewController, NSTableViewDelegate, NSTex
         
         // setup variable menu
         if let menu = self.variableInsertionMenu?.menu {
-            menu.addItems(for: FileDropComposer.Token.pathTokens, target: self.formatTextView)
+            for token in FileDropComposer.Token.pathTokens {
+                menu.addItem(token.insertionMenuItem(target: self.formatTextView))
+            }
+            
             menu.addItem(.separator())
-            menu.addItems(for: FileDropComposer.Token.imageTokens, target: self.formatTextView)
+            for token in FileDropComposer.Token.textTokens {
+                menu.addItem(token.insertionMenuItem(target: self.formatTextView))
+            }
+            
+            menu.addItem(.separator())
+            for token in FileDropComposer.Token.imageTokens {
+                menu.addItem(token.insertionMenuItem(target: self.formatTextView))
+            }
         }
     }
     
@@ -88,7 +98,7 @@ final class FileDropPaneController: NSViewController, NSTableViewDelegate, NSTex
         guard control.identifier?.rawValue == FileDropComposer.SettingKey.extensions else { return true }
         
         // sanitize
-        fieldEditor.string = type(of: self).sanitize(extensionsString: fieldEditor.string)
+        fieldEditor.string = Self.sanitize(extensionsString: fieldEditor.string)
         
         self.saveSetting()
         
@@ -103,10 +113,7 @@ final class FileDropPaneController: NSViewController, NSTableViewDelegate, NSTex
             let cellView = rowView.view(atColumn: 1) as? NSTableCellView,
             let menu = cellView.subviews.first as? NSPopUpButton,
             let item = cellView.objectValue as? [String: String]
-            else {
-                assertionFailure()
-                return
-            }
+            else { return assertionFailure() }
         
         // reset attributed string for "All" item
         // -> Otherwise, the title isn't localized.

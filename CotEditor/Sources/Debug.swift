@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2019 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import Foundation
 
 ///  Debug friendly print with a dog/cow.
 ///
-/// This function works just like `Swift.debugPring()` function.
+/// This function works just like `Swift.debugPrint()` function.
 /// The advantage is you can know the thread and the function name that invoked this function easily at the same time.
 /// A 🐄 icon will be printed at the beginning of the message if it's invoked in a background thead, otherwise a 🐕.
 ///
@@ -37,12 +37,12 @@ import Foundation
 func moof(_ items: Any..., function: String = #function) {
     
     let icon = Thread.isMainThread ? "🐕" : "🐄"
-    let prefix = icon + " " + function + " "
+    let prefix = icon + " " + function
     
     if items.isEmpty {
         Swift.print(prefix)
     } else {
-        Swift.print(prefix, terminator: "")
+        Swift.print(prefix, terminator: " ")
         Swift.debugPrint(items)
     }
 }
@@ -62,25 +62,11 @@ func moofTime(_ label: String? = nil, work: () -> Void) {
     
     let icon = Thread.isMainThread ? "🐕" : "🐄"
     let time = measureTime(work: work)
+    let timeString = String(format: "% 2.6fs", time)
     
     if let label = label {
-        Swift.print("\(icon) \(label): \(time)")
+        Swift.print("\(icon) \(label): \(timeString)")
     } else {
-        Swift.print("\(icon) \(time)")
+        Swift.print("\(icon): \(timeString)")
     }
-}
-
-
-extension Date {
-    
-    /// Print time stamp using moof() function.
-    func moof(_ label: String? = nil) {
-        
-        if let label = label {
-            CotEditor.moof(-self.timeIntervalSinceNow, label)
-        } else {
-            CotEditor.moof(-self.timeIntervalSinceNow)
-        }
-    }
-    
 }

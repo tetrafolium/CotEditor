@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -45,16 +45,16 @@ enum LineEnding: Character {
     var name: String {
         
         switch self {
-        case .lf:
-            return "LF"
-        case .cr:
-            return "CR"
-        case .crlf:
-            return "CRLF"
-        case .lineSeparator:
-            return "LS"
-        case .paragraphSeparator:
-            return "PS"
+            case .lf:
+                return "LF"
+            case .cr:
+                return "CR"
+            case .crlf:
+                return "CRLF"
+            case .lineSeparator:
+                return "LS"
+            case .paragraphSeparator:
+                return "PS"
         }
     }
     
@@ -62,16 +62,16 @@ enum LineEnding: Character {
     var localizedName: String {
         
         switch self {
-        case .lf:
-            return "macOS / Unix (LF)".localized
-        case .cr:
-            return "Classic Mac OS (CR)".localized
-        case .crlf:
-            return "Windows (CRLF)".localized
-        case .lineSeparator:
-            return "Unix Line Separator".localized
-        case .paragraphSeparator:
-            return "Unix Paragraph Separator".localized
+            case .lf:
+                return "macOS / Unix (LF)".localized
+            case .cr:
+                return "Classic Mac OS (CR)".localized
+            case .crlf:
+                return "Windows (CRLF)".localized
+            case .lineSeparator:
+                return "Unix Line Separator".localized
+            case .paragraphSeparator:
+                return "Unix Paragraph Separator".localized
         }
     }
     
@@ -89,29 +89,35 @@ enum LineEnding: Character {
 
 private extension LineEnding {
     
-    static let characterSet = CharacterSet(charactersIn: "\n\r\u{2028}\u{2029}")
     static let regexPattern = "\\r\\n|[\\n\\r\\u2028\\u2029]"
 }
 
 
 extension StringProtocol where Self.Index == String.Index {
     
-    /// the first line ending type
+    /// The first line ending type.
     var detectedLineEnding: LineEnding? {
         
-        // We don't use `CharacterSet.newlines` because it contains more characters than we need.
-        guard let range = self.rangeOfCharacter(from: LineEnding.characterSet) else { return nil }
+        guard let range = self.range(of: LineEnding.regexPattern, options: .regularExpression) else { return nil }
+        
+        // -> Swift treats "\r\n" also as a single character.
         let character = self[range.lowerBound]
-        // -> This is enough because Swift (at least Swift 3) treats "\r\n" as a single character.
         
         return LineEnding(rawValue: character)
     }
     
     
-    /// string removing all kind of line ending characters in the receiver
-    var removingLineEndings: String {
+    /// Count characters in the receiver but except all kinds of line endings.
+    var countExceptLineEnding: Int {
         
-        return self.replacingOccurrences(of: LineEnding.regexPattern, with: "", options: .regularExpression)
+        // workarond for a bug since Swift 5 that removes BOM at the beginning (2019-05 Swift 5.1).
+        // cf. https://bugs.swift.org/browse/SR-10896
+        guard !self.starts(with: "\u{FEFF}") || self.compareCount(with: 16) == .greater else {
+            let startIndex = self.index(after: self.startIndex)
+            return self[startIndex...].replacingOccurrences(of: LineEnding.regexPattern, with: "", options: .regularExpression).count + 1
+        }
+        
+        return self.replacingOccurrences(of: LineEnding.regexPattern, with: "", options: .regularExpression).count
     }
     
     

@@ -82,18 +82,18 @@ extension Editable {
         
         let replacementRange: NSRange = {
             switch location {
-            case .replaceSelection:
-                return textView.selectedRange
-            case .afterSelection:
-                return NSRange(location: textView.selectedRange.upperBound, length: 0)
-            case .replaceAll:
-                return textView.string.nsRange
-            case .afterAll:
-                return NSRange(location: textView.string.utf16.count, length: 0)
+                case .replaceSelection:
+                    return textView.selectedRange
+                case .afterSelection:
+                    return NSRange(location: textView.selectedRange.upperBound, length: 0)
+                case .replaceAll:
+                    return textView.string.nsRange
+                case .afterAll:
+                    return NSRange(location: (textView.string as NSString).length, length: 0)
             }
-            }()
+        }()
         
-        let selectedRange = NSRange(location: replacementRange.location, length: string.utf16.count)
+        let selectedRange = NSRange(location: replacementRange.location, length: (string as NSString).length)
         
         textView.replace(with: string, range: replacementRange, selectedRange: selectedRange,
                          actionName: "Insert Text".localized)

@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -46,13 +46,8 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     
     // MARK: Private Properties
     
-    private let stylesheetColorList: NSColorList = {
-        let colorList = NSColorList(name: "Stylesheet Keywords".localized)
-        for (keyword, color) in NSColor.stylesheetKeywordColors {
-            colorList.setColor(color, forKey: keyword)
-        }
-        return colorList
-    }()
+    private let stylesheetColorList: NSColorList = NSColor.stylesheetKeywordColors
+        .reduce(into: NSColorList(name: "Stylesheet Keywords".localized)) { $0.setColor($1.value, forKey: $1.key) }
     
     private weak var panel: NSColorPanel?
     @objc private dynamic var color: NSColor?
@@ -60,15 +55,28 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     
     
     // MARK: -
+    // MARK: View Controller Methods
+    
+    override func viewDidLoad() {
+        
+        super.viewDidLoad()
+        
+        self.view.translatesAutoresizingMaskIntoConstraints = false
+    }
+    
+    
+    
     // MARK: Public Methods
     
-    /// set color to color panel from color code
-    func setColor(withCode code: String?) {
+    /// Set color to color panel with color code.
+    ///
+    /// - Parameter code: The color code of the color to set.
+    func setColor(code: String?) {
         
-        guard let sanitizedCode = code?.trimmingCharacters(in: .whitespacesAndNewlines), !sanitizedCode.isEmpty else { return }
+        guard let code = code?.trimmingCharacters(in: .whitespacesAndNewlines), !code.isEmpty else { return }
         
         var codeType: ColorCodeType?
-        guard let color = NSColor(colorCode: sanitizedCode, type: &codeType) else { return }
+        guard let color = NSColor(colorCode: code, type: &codeType) else { return }
         
         self.selectedCodeType = codeType ?? .hex
         self.panel?.color = color
@@ -82,7 +90,7 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         
         guard let panel = self.panel else { return assertionFailure() }
-    
+        
         panel.delegate = nil
         panel.accessoryView = nil
         panel.detachColorList(self.stylesheetColorList)
@@ -98,22 +106,19 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
         
         // setup the shared color panel
         let panel = NSColorPanel.shared
-        panel.accessoryView = self.view
-        panel.showsAlpha = true
         panel.isRestorable = false
-        
         panel.delegate = self
-        panel.setAction(#selector(selectColor(_:)))
+        panel.accessoryView = self.view
+        panel.attachColorList(self.stylesheetColorList)
+        panel.showsAlpha = true
+        
+        panel.setAction(#selector(selectColor))
         panel.setTarget(self)
         
         // make position of accessory view center
         if let superview = panel.accessoryView?.superview {
-            superview.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|[accessory]|",
-                                                                    metrics: nil,
-                                                                    views: ["accessory": self.view]))
+            superview.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "|[accessory]|", metrics: nil, views: ["accessory": self.view]))
         }
-        
-        panel.attachColorList(self.stylesheetColorList)
         
         self.panel = panel
         self.color = panel.color
@@ -128,9 +133,8 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
         
         guard self.colorCode != nil else { return }
         
-        guard let receiver = NSApp.target(forAction: #selector(ColorCodeReceiver.insertColorCode(_:))) as? ColorCodeReceiver else {
-            NSSound.beep()
-            return
+        guard let receiver = NSApp.target(forAction: #selector(ColorCodeReceiver.insertColorCode)) as? ColorCodeReceiver else {
+            return NSSound.beep()
         }
         
         receiver.insertColorCode(self)
@@ -138,9 +142,9 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     
     
     /// a new color was selected on the panel
-    @IBAction func selectColor(_ sender: NSColorPanel?) {
+    @IBAction func selectColor(_ sender: NSColorPanel) {
         
-        self.color = sender?.color
+        self.color = sender.color
         self.updateCode(sender)
     }
     
@@ -148,7 +152,7 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     /// set color from the color code field in the panel
     @IBAction func applayColorCode(_ sender: Any?) {
         
-        self.setColor(withCode: self.colorCode)
+        self.setColor(code: self.colorCode)
     }
     
     
@@ -156,13 +160,7 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     @IBAction func updateCode(_ sender: Any?) {
         
         let codeType = self.selectedCodeType
-        let color: NSColor? = {
-            if let colorSpace = self.color?.colorSpace, ![NSColorSpace.genericRGB, .deviceRGB].contains(colorSpace) {
-                return self.color?.usingColorSpace(.genericRGB)
-            }
-            return self.color
-        }()
-        
+        let color = self.color?.usingColorSpace(.genericRGB)
         var code = color?.colorCode(type: codeType)
         
         // keep lettercase if current Hex code is uppercase
@@ -180,13 +178,8 @@ final class ColorCodePanelController: NSViewController, NSWindowDelegate {
     /// current color code type selection
     private var selectedCodeType: ColorCodeType {
         
-        get {
-            return ColorCodeType(rawValue: UserDefaults.standard[.colorCodeType]) ?? .hex
-        }
-        
-        set {
-            UserDefaults.standard[.colorCodeType] = newValue.rawValue
-        }
+        get { ColorCodeType(rawValue: UserDefaults.standard[.colorCodeType]) ?? .hex }
+        set { UserDefaults.standard[.colorCodeType] = newValue.rawValue }
     }
     
 }

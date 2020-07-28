@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -25,92 +25,62 @@
 //
 
 import Cocoa
-import CoreText
 
-final class LayoutManager: NSLayoutManager, ValidationIgnorable {
+final class LayoutManager: NSLayoutManager, InvisibleDrawing, ValidationIgnorable, LineRangeCacheable {
+    
+    // MARK: Protocol Properties
+    
+    var showsControls = false
+    var invisiblesDefaultsObservers: [UserDefaultsObservation] = []
+    
+    var ignoresDisplayValidation = false
+    
+    var string: NSString  { self.attributedString().string as NSString }
+    var lineRangeCache = LineRangeCache()
+    
     
     // MARK: Public Properties
     
-    var ignoresDisplayValidation = false
+    var usesAntialias = true
+    
+    var textFont: NSFont = .systemFont(ofSize: 0) {
+        
+        // store text font to avoid the issue where the line height can be inconsistent by using a fallback font
+        // -> DO NOT use `self.firstTextView?.font`, because when the specified font doesn't support
+        //    the first character of the text view content, it returns a fallback font for the first one.
+        didSet {
+            // cache metric values
+            self.defaultLineHeight = self.defaultLineHeight(for: textFont)
+            self.defaultBaselineOffset = self.defaultBaselineOffset(for: textFont)
+            self.boundingBoxForControlGlyph = self.boundingBoxForControlGlyph(for: textFont)
+            self.spaceWidth = textFont.width(of: " ")
+        }
+    }
     
     var showsInvisibles = false {
         
         didSet {
-            guard let textStorage = self.textStorage else { return assertionFailure() }
+            guard showsInvisibles != oldValue else { return }
             
-            let wholeRange = NSRange(..<textStorage.length)
-            
-            if self.showsOtherInvisibles {
-                // -> force recaluculate layout in order to make spaces for control characters drawing
-                self.invalidateGlyphs(forCharacterRange: wholeRange, changeInLength: 0, actualCharacterRange: nil)
-                self.invalidateLayout(forCharacterRange: wholeRange, actualCharacterRange: nil)
-            } else {
-                self.invalidateDisplay(forCharacterRange: wholeRange)
-            }
+            self.invalidateInvisibleDisplay()
         }
     }
     
-    var usesAntialias = true
+    var invisiblesColor: NSColor = .disabledControlTextColor
     
-    var textFont: NSFont? {
-        
-        // keep body text font to avoid the issue where the line height can be different by composite font
-        // -> DO NOT use `self.firstTextView.font`, because it may return another font in case for example:
-        //    Japansete text is input nevertheless the font that user specified dosen't support it.
-        didSet {
-            // cache metric values to fix line height
-            if let textFont = self.textFont {
-                self.defaultLineHeight = self.defaultLineHeight(for: textFont)
-                self.defaultBaselineOffset = self.defaultBaselineOffset(for: textFont)
-                
-                // cache width of space char for hanging indent width calculation
-                self.spaceWidth = textFont.spaceWidth
-                
-                // cache replacement glyph width for ATS Typesetter
-                let invisibleFont = NSFont(named: .lucidaGrande, size: textFont.pointSize) ?? textFont  // use current text font for fallback
-                let replacementGlyph = invisibleFont.glyph(withName: "replacement")  // U+FFFD
-                self.replacementGlyphWidth = invisibleFont.boundingRect(forGlyph: replacementGlyph).width
-            }
-            
-            self.invisibleLines = self.generateInvisibleLines()
-        }
-    }
-    
-    var invisiblesColor = NSColor.disabledControlTextColor {
-        
-        didSet {
-            self.invisibleLines = self.generateInvisibleLines()
-        }
-    }
+    var showsIndentGuides = false
+    var tabWidth = 0
     
     private(set) var spaceWidth: CGFloat = 0
-    private(set) var replacementGlyphWidth: CGFloat = 0
-    private(set) var defaultBaselineOffset: CGFloat = 0  // defaultBaselineOffset for textFont
-    private(set) var showsOtherInvisibles = false
     
     
     // MARK: Private Properties
     
-    private var defaultsObservers: [UserDefaultsObservation] = []
-    
     private var defaultLineHeight: CGFloat = 1.0
+    private var defaultBaselineOffset: CGFloat = 0
+    private var boundingBoxForControlGlyph: NSRect = .zero
     
-    private var showsSpace = false
-    private var showsTab = false
-    private var showsNewLine = false
-    private var showsFullwidthSpace = false
-    
-    private lazy var invisibleLines: InvisibleLines = self.generateInvisibleLines()
-    
-    
-    private struct InvisibleLines {
-        
-        let space: CTLine
-        let tab: CTLine
-        let newLine: CTLine
-        let fullwidthSpace: CTLine
-        let replacement: CTLine
-    }
+    private var indentGuideObserver: UserDefaultsObservation?
     
     
     
@@ -121,39 +91,12 @@ final class LayoutManager: NSLayoutManager, ValidationIgnorable {
         
         super.init()
         
-        self.applyDefaultInvisiblesSetting()
-        
-        // Since NSLayoutManager's showsControlCharacters flag is totally buggy (at least on El Capitan),
-        // we stopped using it since CotEditor 2.3.3 released in 2016-01.
-        // Previously, CotEditor used this flag for "Other Invisible Characters."
-        // However, as CotEditor draws such control-glyph-alternative-characters by itself in `drawGlyphs(forGlyphRange:at:)`,
-        // this flag is actually not so necessary as I thougth. Thus, treat carefully this.
-        self.showsControlCharacters = false
-        
-        self.typesetter = ATSTypesetter()
-        
-        // observe change in defaults
-        let defaultKeys: [DefaultKeys] = [
-            .invisibleSpace,
-            .invisibleTab,
-            .invisibleNewLine,
-            .invisibleFullwidthSpace,
-            
-            .showInvisibleSpace,
-            .showInvisibleTab,
-            .showInvisibleNewLine,
-            .showInvisibleFullwidthSpace,
-            
-            .showOtherInvisibleChars,
-            ]
-        self.defaultsObservers = UserDefaults.standard.observe(keys: defaultKeys) { [unowned self] (key, _) in
-            self.applyDefaultInvisiblesSetting()
-            self.invisibleLines = self.generateInvisibleLines()
-            
-            guard let textView = self.firstTextView else { return }
-            
-            textView.setNeedsDisplay(textView.visibleRect, avoidAdditionalLayout: (key != .showOtherInvisibleChars))
+        self.indentGuideObserver = UserDefaults.standard.observe(key: .showIndentGuides) { [weak self] _ in
+            guard let self = self, self.showsInvisibles else { return }
+            self.invalidateDisplay(forCharacterRange: self.attributedString().range)
         }
+        
+        self.delegate = self
     }
     
     
@@ -163,18 +106,13 @@ final class LayoutManager: NSLayoutManager, ValidationIgnorable {
     }
     
     
-    deinit {
-        self.defaultsObservers.forEach { $0.invalidate() }
-    }
-    
-    
     
     // MARK: Layout Manager Methods
     
     /// adjust rect of last empty line
     override func setExtraLineFragmentRect(_ fragmentRect: NSRect, usedRect: NSRect, textContainer container: NSTextContainer) {
         
-        // -> height of the extra line fragment should be the same as normal other fragments that are likewise customized in ATSTypesetter
+        // -> The height of the extra line fragment should be the same as other normal fragments that are likewise customized in the delegate.
         var fragmentRect = fragmentRect
         fragmentRect.size.height = self.lineHeight
         var usedRect = usedRect
@@ -186,84 +124,19 @@ final class LayoutManager: NSLayoutManager, ValidationIgnorable {
     
     /// draw glyphs
     override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
-    
+        
         NSGraphicsContext.saveGraphicsState()
         
-        // set anti-alias state on screen drawing
         if NSGraphicsContext.currentContextDrawingToScreen() {
             NSGraphicsContext.current?.shouldAntialias = self.usesAntialias
         }
         
-        // draw invisibles
-        if self.showsInvisibles,
-            let context = NSGraphicsContext.current?.cgContext,
-            let string = self.textStorage?.string
-        {
-            let isVertical = (self.firstTextView?.layoutOrientation == .vertical)
-            let isRTL = (self.firstTextView?.baseWritingDirection == .rightToLeft)
-            let isOpaque = self.firstTextView?.isOpaque ?? true
-            
-            if !isOpaque {
-                context.setShouldSmoothFonts(false)
-            }
-            
-            // flip coordinate if needed
-            if NSGraphicsContext.current?.isFlipped ?? false {
-                context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
-            }
-            
-            // draw invisibles glyph by glyph
-            for glyphIndex in glyphsToShow.location..<glyphsToShow.upperBound {
-                let charIndex = self.characterIndexForGlyph(at: glyphIndex)
-                let utf16Index = String.UTF16Index(encodedOffset: charIndex)
-                let codeUnit = string.utf16[utf16Index]
-                let invisible = Invisible(codeUnit: codeUnit)
-                
-                let line: CTLine
-                switch invisible {
-                case .space?:
-                    guard self.showsSpace else { continue }
-                    line = self.invisibleLines.space
-                    
-                case .tab?:
-                    guard self.showsTab else { continue }
-                    line = self.invisibleLines.tab
-                    
-                case .newLine?:
-                    guard self.showsNewLine else { continue }
-                    line = self.invisibleLines.newLine
-                    
-                case .fullwidthSpace?:
-                    guard self.showsFullwidthSpace else { continue }
-                    line = self.invisibleLines.fullwidthSpace
-                    
-                default:
-                    guard self.showsOtherInvisibles else { continue }
-                    guard self.propertyForGlyph(at: glyphIndex) == .controlCharacter else { continue }
-                    line = self.invisibleLines.replacement
-                }
-                
-                // calculate position to draw glyph
-                let lineOrigin = self.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil, withoutAdditionalLayout: true).origin
-                let glyphLocation = self.location(forGlyphAt: glyphIndex)
-                var point = lineOrigin.offset(by: origin).offsetBy(dx: glyphLocation.x,
-                                                                   dy: self.defaultBaselineOffset)
-                if isVertical {
-                    // [note] Probably not a good solution but better than doing nothing (2016-05-25).
-                    point.y += line.bounds(options: .useGlyphPathBounds).height / 2
-                }
-                if isRTL, invisible == .newLine {
-                    point.x -= line.bounds().width
-                }
-                
-                // draw character
-                context.textPosition = point
-                CTLineDraw(line, context)
-            }
-            
-            if !isOpaque {
-                context.setShouldSmoothFonts(true)
-            }
+        if self.showsIndentGuides {
+            self.drawIndentGuides(forGlyphRange: glyphsToShow, at: origin, color: self.invisiblesColor, tabWidth: self.tabWidth)
+        }
+        
+        if self.showsInvisibles {
+            self.drawInvisibles(forGlyphRange: glyphsToShow, at: origin, baselineOffset: self.baselineOffset(for: .horizontal), color: self.invisiblesColor, types: UserDefaults.standard.showsInvisible)
         }
         
         super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
@@ -272,31 +145,21 @@ final class LayoutManager: NSLayoutManager, ValidationIgnorable {
     }
     
     
-    /// textStorage did update
-    override func processEditing(for textStorage: NSTextStorage, edited editMask: NSTextStorageEditActions, range newCharRange: NSRange, changeInLength delta: Int, invalidatedRange invalidatedCharRange: NSRange) {
-        
-        // invalidate wrapping line indent in editRange if needed
-        if editMask.contains(.editedCharacters) {
-            self.invalidateIndent(in: newCharRange)
-        }
-        
-        super.processEditing(for: textStorage, edited: editMask, range: newCharRange, changeInLength: delta, invalidatedRange: invalidatedCharRange)
-    }
-    
-    
     /// fill background rectangles with a color
     override func fillBackgroundRectArray(_ rectArray: UnsafePointer<NSRect>, count rectCount: Int, forCharacterRange charRange: NSRange, color: NSColor) {
         
-        // modify selected highlight color when document is inactive
-        // -> Otherwise, `.secondarySelectedControlColor` will be used forcely and text becomes unreadable in a dark theme.
-        if NSAppKitVersion.current <= .macOS10_13,
-            color == .secondarySelectedControlColor,  // check if inactive
-            let theme = (self.textViewForBeginningOfSelection as? Themable)?.theme,
+        // modify selected highlight color when the window is inactive
+        // -> Otherwise, `.secondarySelectedControlColor` will be used forcibly and text becomes unreadable
+        //    when the window appearance and theme are inconsistent.
+        if color == .secondarySelectedControlColor,  // check if inactive
+            let textContainer = self.textContainer(forGlyphAt: self.glyphIndexForCharacter(at: charRange.location),
+                                                   effectiveRange: nil, withoutAdditionalLayout: true),
+            let theme = (textContainer.textView as? Themable)?.theme,
             let secondarySelectionColor = theme.secondarySelectionColor
         {
             secondarySelectionColor.setFill()
         }
-    
+        
         super.fillBackgroundRectArray(rectArray, count: rectCount, forCharacterRange: charRange, color: color)
     }
     
@@ -312,10 +175,34 @@ final class LayoutManager: NSLayoutManager, ValidationIgnorable {
     }
     
     
+    override func setGlyphs(_ glyphs: UnsafePointer<CGGlyph>, properties props: UnsafePointer<NSLayoutManager.GlyphProperty>, characterIndexes charIndexes: UnsafePointer<Int>, font aFont: NSFont, forGlyphRange glyphRange: NSRange) {
+        
+        // fix the width of whitespaces when the base font is fixed pitch.
+        let newProps = UnsafeMutablePointer(mutating: props)
+        if self.textFont.isFixedPitch {
+            for index in 0..<glyphRange.length {
+                newProps[index].subtract(.elastic)
+            }
+        }
+        
+        super.setGlyphs(glyphs, properties: newProps, characterIndexes: charIndexes, font: aFont, forGlyphRange: glyphRange)
+    }
+    
+    
+    override func processEditing(for textStorage: NSTextStorage, edited editMask: NSTextStorageEditActions, range newCharRange: NSRange, changeInLength delta: Int, invalidatedRange invalidatedCharRange: NSRange) {
+        
+        if editMask.contains(.editedCharacters) {
+            self.invalidateLineRanges(in: newCharRange, changeInLength: delta)
+        }
+        
+        super.processEditing(for: textStorage, edited: editMask, range: newCharRange, changeInLength: delta, invalidatedRange: invalidatedCharRange)
+    }
+    
+    
     
     // MARK: Public Methods
     
-    /// return fixed line height to avoid having different line height by composite font
+    /// Fixed line height to avoid having different line height by composite font.
     var lineHeight: CGFloat {
         
         let multiple = self.firstTextView?.defaultParagraphStyle?.lineHeightMultiple ?? 1.0
@@ -324,137 +211,188 @@ final class LayoutManager: NSLayoutManager, ValidationIgnorable {
     }
     
     
-    /// invalidate indent of wrapped lines
-    func invalidateIndent(in range: NSRange) {
+    /// Fixed baseline offset to place glyphs vertically in the middle of a line.
+    ///
+    /// - Parameter layoutOrientation: The text layout orientation.
+    /// - Returns: The baseline offset.
+    func baselineOffset(for layoutOrientation: TextLayoutOrientation) -> CGFloat {
         
-        assert(Thread.isMainThread)
-        
-        guard UserDefaults.standard[.enablesHangingIndent] else { return }
-        
-        guard
-            let textStorage = self.textStorage,
-            let textView = self.firstTextView
-            else { return assertionFailure() }
-        
-        // only on focused editor
-        if let window = textView.window, !self.layoutManagerOwnsFirstResponder(in: window) { return }
-        
-        let string = textStorage.string as NSString
-        let lineRange = string.lineRange(for: range)
-        
-        guard lineRange.length > 0 else { return }
-        
-        let hangingIndent = self.spaceWidth * CGFloat(UserDefaults.standard[.hangingIndentWidth])
-        let regex = try! NSRegularExpression(pattern: "^[ \\t]+(?!$)")
-        
-        // get dummy attributes to make calculation of indent width the same as layoutManager's calculation (2016-04)
-        let defaultParagraphStyle = textView.defaultParagraphStyle ?? NSParagraphStyle.default
-        let indentAttributes: [NSAttributedString.Key: Any] = {
-            let typingParagraphStyle = (textView.typingAttributes[.paragraphStyle] as? NSParagraphStyle)?.mutable
-            typingParagraphStyle?.headIndent = 1.0  // dummy indent value for size calculation (2016-04)
-            
-            var attributes: [NSAttributedString.Key: Any] = [:]
-            attributes[.font] = self.textFont
-            attributes[.paragraphStyle] = typingParagraphStyle
-            return attributes
-        }()
-        
-        var cache = [String: CGFloat]()
-        
-        // process line by line
-        textStorage.beginEditing()
-        string.enumerateSubstrings(in: lineRange, options: .byLines) { (substring: String?, substringRange, enclosingRange, stop) in
-            guard let substring = substring else { return }
-            
-            var indent = hangingIndent
-            
-            // add base indent
-            let baseIndentRange = regex.rangeOfFirstMatch(in: substring, range: substring.nsRange)
-            if baseIndentRange.location != NSNotFound {
-                let indentString = (substring as NSString).substring(with: baseIndentRange)
-                if let width = cache[indentString] {
-                    indent += width
-                } else {
-                    let width = NSAttributedString(string: indentString, attributes: indentAttributes).size().width
-                    cache[indentString] = width
-                    indent += width
-                }
-            }
-            
-            // apply new indent only if needed
-            let paragraphStyle = textStorage.attribute(.paragraphStyle, at: substringRange.location, effectiveRange: nil) as? NSParagraphStyle
-            if indent != paragraphStyle?.headIndent {
-                let mutableParagraphStyle = (paragraphStyle ?? defaultParagraphStyle).mutable
-                mutableParagraphStyle.headIndent = indent
-                
-                textStorage.addAttribute(.paragraphStyle, value: mutableParagraphStyle, range: substringRange)
-            }
+        switch layoutOrientation {
+            case .vertical:
+                return self.lineHeight / 2
+            default:
+                // remove the space above to make glyphs visually center
+                let diff = self.textFont.ascender - self.textFont.capHeight
+                return (self.lineHeight + self.defaultBaselineOffset - diff) / 2
         }
-        
-        textStorage.endEditing()
-    }
-    
-    
-    
-    // MARK: Private Methods
-    
-    /// apply invisible settings
-    private func applyDefaultInvisiblesSetting() {
-        
-        let defaults = UserDefaults.standard
-        // `showsInvisibles` will be set from EditorTextView or PrintTextView
-        self.showsSpace = defaults[.showInvisibleSpace]
-        self.showsTab = defaults[.showInvisibleTab]
-        self.showsNewLine = defaults[.showInvisibleNewLine]
-        self.showsFullwidthSpace = defaults[.showInvisibleFullwidthSpace]
-        self.showsOtherInvisibles = defaults[.showOtherInvisibleChars]
-    }
-    
-    
-    /// cache CTLines for invisible characters drawing
-    private func generateInvisibleLines() -> InvisibleLines {
-        
-        let fontSize = self.textFont?.pointSize ?? 0
-        let font = NSFont.systemFont(ofSize: fontSize)
-        let spaceFont = self.textFont ?? font
-        let fullWidthFont = NSFont(named: .hiraginoSans, size: fontSize) ?? font
-        
-        return InvisibleLines(space: self.invisibleLine(.space, font: spaceFont),
-                              tab: self.invisibleLine(.tab, font: font),
-                              newLine: self.invisibleLine(.newLine, font: font),
-                              fullwidthSpace: self.invisibleLine(.fullwidthSpace, font: fullWidthFont),
-                              replacement: self.invisibleLine(.replacement, font: fullWidthFont))
-    }
-    
-    
-    /// create CTLine for given invisible type
-    private func invisibleLine(_ invisible: Invisible, font: NSFont) -> CTLine {
-        
-        return CTLine.create(string: invisible.usedSymbol, color: self.invisiblesColor, font: font)
     }
     
 }
 
 
 
-// MARK: -
-
-private extension CTLine {
+extension LayoutManager: NSLayoutManagerDelegate {
     
-    /// convenient initializer for CTLine
-    class func create(string: String, color: NSColor, font: NSFont) -> CTLine {
+    /// adjust line height to be all the same
+    func layoutManager(_ layoutManager: NSLayoutManager, shouldSetLineFragmentRect lineFragmentRect: UnsafeMutablePointer<NSRect>, lineFragmentUsedRect: UnsafeMutablePointer<NSRect>, baselineOffset: UnsafeMutablePointer<CGFloat>, in textContainer: NSTextContainer, forGlyphRange glyphRange: NSRange) -> Bool {
         
-        let attrString = NSAttributedString(string: string, attributes: [.foregroundColor: color,
-                                                                         .font: font])
+        // avoid inconsistent line height by a composite font
+        // -> The line height by normal input keeps consistant when overriding the related methods in NSLayoutManager.
+        //    but then, the drawing won't be update properly when the font or line hight is changed.
+        // -> NSParagraphStyle's `.lineheightMultiple` can also control the line height,
+        //    but it causes an issue when the first character of the string uses a fallback font.
+        lineFragmentRect.pointee.size.height = self.lineHeight
+        lineFragmentUsedRect.pointee.size.height = self.lineHeight
         
-        return CTLineCreateWithAttributedString(attrString)
+        // vertically center the glyphs in the line fragment
+        baselineOffset.pointee = self.baselineOffset(for: textContainer.layoutOrientation)
+        
+        return true
     }
     
     
-    /// get bounds in a objective way.
-    func bounds(options: CTLineBoundsOptions = []) -> CGRect {
+    /// treat control characers as whitespace to draw replacement glyphs
+    func layoutManager(_ layoutManager: NSLayoutManager, shouldUse action: NSLayoutManager.ControlCharacterAction, forControlCharacterAt charIndex: Int) -> NSLayoutManager.ControlCharacterAction {
         
-        return CTLineGetBoundsWithOptions(self, options)
+        // -> Then, the glyph width can be modified in `layoutManager(_:boundingBoxForControlGlyphAt:...)`.
+        return self.showsControlCharacter(at: charIndex, proposedAction: action) ? .whitespace : action
+    }
+    
+    
+    /// make a blank space to draw the replacement glyph in `drawGlyphs(forGlyphRange:at:)` later
+    func layoutManager(_ layoutManager: NSLayoutManager, boundingBoxForControlGlyphAt glyphIndex: Int, for textContainer: NSTextContainer, proposedLineFragment proposedRect: NSRect, glyphPosition: NSPoint, characterIndex charIndex: Int) -> NSRect {
+        
+        return self.boundingBoxForControlGlyph
+    }
+    
+    
+    /// avoid soft wrapping just after indent
+    func layoutManager(_ layoutManager: NSLayoutManager, shouldBreakLineByWordBeforeCharacterAt charIndex: Int) -> Bool {
+        
+        // avoid creating CharacterSet every time
+        struct NonIndent { static let characterSet = CharacterSet(charactersIn: " \t").inverted }
+        
+        // check if the character is the first non-whitespace character after indent
+        let string = self.string
+        let lineStartIndex = self.lineStartIndex(at: charIndex)
+        let range = NSRange(location: lineStartIndex, length: charIndex - lineStartIndex)
+        
+        return string.rangeOfCharacter(from: NonIndent.characterSet, range: range) != .notFound
+    }
+    
+    
+    /// apply sytax highlighing on printing also
+    func layoutManager(_ layoutManager: NSLayoutManager, shouldUseTemporaryAttributes attrs: [NSAttributedString.Key: Any] = [:], forDrawingToScreen toScreen: Bool, atCharacterIndex charIndex: Int, effectiveRange effectiveCharRange: NSRangePointer?) -> [NSAttributedString.Key: Any]? {
+        
+        return attrs
+    }
+    
+}
+
+
+
+// MARK: Private Extension
+
+private extension NSLayoutManager {
+    
+    /// Draw indent guides at every given indent width.
+    ///
+    /// - Parameters:
+    ///   - glyphsToShow: The range of glyphs that are drawn.
+    ///   - origin: The position of the text container in the coordinate system of the currently focused view.
+    ///   - color: The color of guides.
+    ///   - tabWidth: The number of spaces for an indent.
+    func drawIndentGuides(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint, color: NSColor, tabWidth: Int) {
+        
+        guard tabWidth > 0 else { return assertionFailure() }
+        
+        // calculate characterRange to seek
+        let string = self.attributedString().string as NSString
+        let charactersToShow = self.characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
+        let lineStartIndex = string.lineStartIndex(at: charactersToShow.location)
+        let characterRange = NSRange(location: lineStartIndex, length: charactersToShow.upperBound - lineStartIndex)
+        
+        // find indent indexes
+        var indentIndexes: [(lineRange: NSRange, indexes: [Int])] = []
+        string.enumerateSubstrings(in: characterRange, options: [.byLines, .substringNotRequired]) { (_, range, _, _) in
+            var indexes: [Int] = []
+            var spaceCount = 0
+            loop: for characterIndex in range.lowerBound..<range.upperBound {
+                let isIndentLevel = spaceCount.isMultiple(of: tabWidth) && spaceCount > 0
+                
+                switch string.character(at: characterIndex) {
+                    case 0x0020:  // space
+                        spaceCount += 1
+                    case 0x0009:  // tab
+                        spaceCount += tabWidth - (spaceCount % tabWidth)
+                    default:
+                        break loop
+                }
+                
+                if isIndentLevel {
+                    indexes.append(characterIndex)
+                }
+            }
+            
+            guard !indexes.isEmpty else { return }
+            
+            indentIndexes.append((range, indexes))
+        }
+        
+        guard !indentIndexes.isEmpty else { return }
+        
+        NSGraphicsContext.saveGraphicsState()
+        
+        color.set()
+        let lineWidth: CGFloat = 0.5
+        let scaleFactor = NSGraphicsContext.current?.cgContext.ctm.a ?? 1
+        
+        // draw guides logical line by logical line
+        for (lineRange, indexes) in indentIndexes {
+            // calculate vertical area to draw lines
+            let glyphIndex = self.glyphIndexForCharacter(at: lineRange.location)
+            var effectiveRange: NSRange = .notFound
+            let lineFragment = self.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &effectiveRange)
+            let guideLength: CGFloat = {
+                guard !effectiveRange.contains(lineRange.upperBound - 1) else { return lineFragment.height }
+                
+                let lastGlyphIndex = self.glyphIndexForCharacter(at: lineRange.upperBound - 1)
+                let lastLineFragment = self.lineFragmentRect(forGlyphAt: lastGlyphIndex, effectiveRange: nil)
+                
+                // check whether hanging indent is enabled
+                guard lastLineFragment.minX != lineFragment.minX else { return lineFragment.height }
+                
+                return lastLineFragment.maxY - lineFragment.minY
+            }()
+            let guideSize = NSSize(width: lineWidth, height: guideLength)
+            
+            // draw lines
+            for index in indexes {
+                let glyphIndex = self.glyphIndexForCharacter(at: index)
+                let glyphLocation = self.location(forGlyphAt: glyphIndex)
+                let guideOrigin = lineFragment.origin.offset(by: origin).offsetBy(dx: glyphLocation.x).aligned(scale: scaleFactor)
+                let guideRect = NSRect(origin: guideOrigin, size: guideSize)
+                
+                guideRect.fill()
+            }
+        }
+        
+        NSGraphicsContext.restoreGraphicsState()
+    }
+    
+}
+
+
+private extension CGPoint {
+    
+    /// Make the point pixel-perfect with the desired scale.
+    ///
+    /// - Parameter scale: The scale factor in which the receiver to be pixel-perfect.
+    /// - Returns: An adjusted point.
+    func aligned(scale: CGFloat = 1) -> Self {
+        
+        return Self(x: round(self.x * scale) / scale,
+                    y: round(self.y * scale) / scale)
     }
     
 }

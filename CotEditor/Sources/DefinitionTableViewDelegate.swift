@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ final class DefinitionTableViewDelegate: NSObject, NSTableViewDelegate {
             row + 1 == tableView.numberOfRows,  // the last row is selected
             let rowView = tableView.rowView(atRow: row, makeIfNecessary: true),
             let (column, textField) = (0 ..< rowView.numberOfColumns).lazy  // find the leftmost text field column
-                .compactMap ({ (column) -> (Int, NSTextField)? in
+                .compactMap({ (column) -> (Int, NSTextField)? in
                     guard let textField = (rowView.view(atColumn: column) as? NSTableCellView)?.textField else { return nil }
                     return (column, textField)
                 }).first,
@@ -61,9 +61,13 @@ final class DefinitionTableViewDelegate: NSObject, NSTableViewDelegate {
     @IBAction func didCheckboxClicked(_ checkbox: NSButton) {
         
         // find tableView
-        let superview = sequence(first: checkbox, next: { $0.superview }).first { $0 is NSTableView }
+        let superview = sequence(first: checkbox, next: \.superview).first { $0 is NSTableView }
         
-        guard let tableView = superview as? NSTableView, tableView.numberOfSelectedRows > 1 else { return }
+        guard
+            let tableView = superview as? NSTableView,
+            tableView.numberOfSelectedRows > 1,
+            tableView.selectedRowIndexes.contains(tableView.row(for: checkbox))
+            else { return }
         
         let columnIndex = tableView.column(for: checkbox)
         

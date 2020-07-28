@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ final class EditorViewController: NSSplitViewController {
     }
     
     
-    /// setup UI
     override func viewDidLoad() {
         
         super.viewDidLoad()
@@ -79,27 +78,26 @@ final class EditorViewController: NSSplitViewController {
     
     // MARK: Split View Controller Methods
     
-    /// avoid showing draggable cursor
+    /// Avoid showing draggable cursor.
     override func splitView(_ splitView: NSSplitView, effectiveRect proposedEffectiveRect: NSRect, forDrawnRect drawnRect: NSRect, ofDividerAt dividerIndex: Int) -> NSRect {
         
-        // -> must call super's delegate method anyway.
+        // -> Super's delegate method must be called anyway.
         super.splitView(splitView, effectiveRect: proposedEffectiveRect, forDrawnRect: drawnRect, ofDividerAt: dividerIndex)
         
         return .zero
     }
     
     
-    /// validate actions
     override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         
         switch item.action {
-        case #selector(selectPrevItemOfOutlineMenu)?:
-            return self.navigationBarController?.canSelectPrevItem ?? false
+            case #selector(selectPrevItemOfOutlineMenu):
+                return self.navigationBarController?.canSelectPrevItem ?? false
             
-        case #selector(selectNextItemOfOutlineMenu)?:
-            return self.navigationBarController?.canSelectNextItem ?? false
+            case #selector(selectNextItemOfOutlineMenu):
+                return self.navigationBarController?.canSelectNextItem ?? false
             
-        default: break
+            default: break
         }
         
         return super.validateUserInterfaceItem(item)
@@ -109,41 +107,40 @@ final class EditorViewController: NSSplitViewController {
     
     // MARK: Public Methods
     
-    /// Whether line number view is visible
+    /// Whether line number view is visible.
     var showsLineNumber: Bool {
         
-        get {
-            return self.textViewController?.showsLineNumber ?? false
-        }
-        
-        set {
-            self.textViewController?.showsLineNumber = newValue
-        }
+        get { self.textViewController?.showsLineNumber ?? false }
+        set { self.textViewController?.showsLineNumber = newValue }
     }
     
     
-    /// Whether navigation bar is visible
+    /// Whether navigation bar is visible.
     var showsNavigationBar: Bool {
         
-        get {
-            return self.navigationBarItem?.isCollapsed == false
-        }
-        
-        set {
-            self.navigationBarItem?.isCollapsed = !newValue
-        }
+        get { self.navigationBarItem?.isCollapsed == false }
+        set { self.navigationBarItem?.isCollapsed = !newValue }
     }
     
     
-    /// set textStorage to inner text view
+    /// Set textStorage to the inner text view.
+    ///
+    /// - Parameter textStorage: The text storage to set.
     func setTextStorage(_ textStorage: NSTextStorage) {
         
-        self.textView?.layoutManager?.replaceTextStorage(textStorage)
-        self.textView?.didChangeText()  // notify to lineNumberView to drive initial line count
+        guard let textView = self.textView else { return assertionFailure() }
+        
+        textView.layoutManager?.replaceTextStorage(textStorage)
+        
+        if textView.isAutomaticLinkDetectionEnabled {
+            textView.detectLink()
+        }
     }
     
     
-    /// apply syntax style to inner text view
+    /// Apply syntax style to the inner text view.
+    ///
+    /// - Parameter style: The syntax style to apply.
     func apply(style: SyntaxStyle) {
         
         guard let textView = self.textView else { return assertionFailure() }
@@ -157,14 +154,14 @@ final class EditorViewController: NSSplitViewController {
     
     // MARK: Action Messages
     
-    /// select previous outline menu item (bridge action from menu bar)
+    /// Select previous outline menu item (bridge action from menu bar).
     @IBAction func selectPrevItemOfOutlineMenu(_ sender: Any?) {
         
         self.navigationBarController?.selectPrevItemOfOutlineMenu(sender)
     }
     
     
-    /// select next outline menu item (bridge action from menu bar)
+    /// Select next outline menu item (bridge action from menu bar).
     @IBAction func selectNextItemOfOutlineMenu(_ sender: Any?) {
         
         self.navigationBarController?.selectNextItemOfOutlineMenu(sender)
@@ -174,7 +171,7 @@ final class EditorViewController: NSSplitViewController {
     
     // MARK: Private Methods
     
-    /// split view item to view controller
+    /// Split view item to view controller.
     private var textViewController: EditorTextViewController? {
         
         return self.textViewItem?.viewController as? EditorTextViewController

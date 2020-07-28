@@ -27,7 +27,7 @@
 import XCTest
 @testable import CotEditor
 
-class URLExtensionsTests: XCTestCase {
+final class URLExtensionsTests: XCTestCase {
     
     func testRelativeURLCreation() {
         
@@ -48,5 +48,5 @@ class URLExtensionsTests: XCTestCase {
         
         XCTAssertEqual(url.path(relativeTo: baseUrl), "file1.txt")
     }
-
+    
 }

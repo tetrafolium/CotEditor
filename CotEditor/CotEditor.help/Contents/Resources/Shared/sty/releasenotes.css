@@ -8,13 +8,11 @@
  
  Created on 2014 by 1024jp
  
- © 2014-2018 CotEditor Project
+ © 2014-2020 CotEditor Project
 */
 
 
 article ul, ol {
-	border: none;
-	background: transparent;
 	margin: 0;
 	padding: 0 1.5em;
 }
@@ -27,7 +25,7 @@ article ul li {
 
 footer {
 	font-size: 90%;
-	color: hsl(0, 0%, 50%);
+	color: -apple-system-secondary-label;
 	margin-top: 2em;
 	padding: 0 1em;
 }
@@ -35,7 +33,7 @@ footer::before {
 	content: '';
 	display: block;
 	width: 140px;
-	border-top: 1px solid hsla(0, 0%, 0%, .2);
+	border-top: 1px solid -apple-system-separator;
 	margin: 0.8em 0;
 }
 
@@ -54,17 +52,16 @@ article > header h1 {
 	margin: 0;
 }
 article > header p {
-	color: hsl(0, 0%, 40%);
+	color: -apple-system-secondary-label;
 	margin: 0;
 }
 article h2 {
 	font-size: 105%;
-	font-weight: bold;
 	margin-bottom: 0.5em;
 }
 
 .none {
-	color: hsl(0, 0%, 50%);
+	color: -apple-system-secondary-label;
 }
 
 .trivial,

@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2019 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -27,23 +27,17 @@ import AppKit
 
 // MARK: Range
 
-private extension NSGlyph {
-    
-    static let verticalTab = NSGlyph(16777215)
-}
-
-
 extension NSTextView {
     
     /// calculate visible range
     var visibleRange: NSRange? {
         
-        return self.range(for: self.visibleRect)
+        return self.range(for: self.visibleRect, withoutAdditionalLayout: true)
     }
     
     
     /// calculate range of characters in rect
-    func range(for rect: NSRect) -> NSRange? {
+    func range(for rect: NSRect, withoutAdditionalLayout: Bool = false) -> NSRange? {
         
         guard
             let layoutManager = self.layoutManager,
@@ -51,7 +45,9 @@ extension NSTextView {
             else { return nil }
         
         let visibleRect = rect.offset(by: -self.textContainerOrigin)
-        let glyphRange = layoutManager.glyphRange(forBoundingRect: visibleRect, in: textContainer)
+        let glyphRange = withoutAdditionalLayout
+            ? layoutManager.glyphRange(forBoundingRectWithoutAdditionalLayout: visibleRect, in: textContainer)
+            : layoutManager.glyphRange(forBoundingRect: visibleRect, in: textContainer)
         
         return layoutManager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
     }
@@ -66,14 +62,7 @@ extension NSTextView {
             else { return nil }
         
         let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
-        var boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-        
-        // adjust size if the substring of the given range is single vertical tab character.
-        if glyphRange.length == 1, layoutManager.glyph(at: glyphRange.location) == .verticalTab {
-            let lineHeight = layoutManager.lineFragmentRect(forGlyphAt: range.location, effectiveRange: nil).height
-            
-            boundingRect.size = CGSize(width: lineHeight / 2, height: lineHeight)
-        }
+        let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
         
         return boundingRect.offset(by: self.textContainerOrigin)
     }
@@ -82,19 +71,15 @@ extension NSTextView {
     /// return bounding rectangles (in text view coordinates) enclosing all the given character range
     func boundingRects(for range: NSRange) -> [NSRect] {
         
+        var count = 0
         guard
             let layoutManager = self.layoutManager,
-            let textContainer = self.textContainer
+            let textContainer = self.textContainer,
+            let rectArray = layoutManager.rectArray(forCharacterRange: range, withinSelectedCharacterRange: range,
+                                                    in: textContainer, rectCount: &count)
             else { return [] }
         
-        let glyphRange = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
-        
-        var rects: [NSRect] = []
-        layoutManager.enumerateEnclosingRects(forGlyphRange: glyphRange, withinSelectedGlyphRange: glyphRange, in: textContainer) { (rect, _) in
-            rects.append(rect)
-        }
-        
-        return rects.map { $0.offset(by: self.textContainerOrigin) }
+        return (0..<count).map { rectArray[$0].offset(by: self.textContainerOrigin) }
     }
     
 }
@@ -117,16 +102,14 @@ extension NSTextView {
         }
         
         set {
-            // sanitize scale
-            let scale: CGFloat = {
-                guard let scrollView = self.enclosingScrollView else { return newValue }
-                
-                return newValue.clamped(to: scrollView.minMagnification...scrollView.maxMagnification)
-            }()
+            assert(newValue > 0)
+            
+            // sanitize value
+            let scale = self.enclosingScrollView
+                .flatMap { $0.minMagnification...$0.maxMagnification }
+                .map { newValue.clamped(to: $0) } ?? newValue
             
             guard scale != self.scale else { return }
-            
-            self.willChangeValue(for: \.scale)
             
             // scale
             self.willChangeValue(for: \.scale)
@@ -135,20 +118,21 @@ extension NSTextView {
             self.didChangeValue(for: \.scale)
             
             // ensure bounds origin is {0, 0} for vertical text orientation
-            self.translateOrigin(to: self.bounds.origin)
+            // to workaround AppKit-side bug (FB5703371).
+            if self.layoutOrientation == .vertical {
+                self.translateOrigin(to: self.bounds.origin)
+            }
             
             // reset minimum size for unwrap mode
-            self.minSize = self.visibleRect.size
+            let visibleRect = self.enclosingScrollView?.documentVisibleRect ?? self.visibleRect
+            self.minSize = visibleRect.size
             
-            // ensure text layout
-            if let textContainer = self.textContainer {
-                self.layoutManager?.ensureLayout(for: textContainer)
-            }
+            // update view size
+            // -> For in the case by scaling-down when the view becomes bigger than text content width
+            //    but doesn't stretch enough to the right edge of the scroll view.
             self.sizeToFit()
             
-            self.didChangeValue(for: \.scale)
-            
-            self.setNeedsDisplay(self.visibleRect, avoidAdditionalLayout: true)
+            self.needsDisplay = true
         }
     }
     
@@ -174,14 +158,14 @@ extension NSTextView {
         
         self.scale = scale
         
+        guard self.scale != currentScale else { return }
+        
         // adjust scroller to keep position of the glyph at the passed-in center point
-        if self.scale != currentScale {
-            let newCenterFromClipOrigin = centerFromClipOrigin.scaled(to: 1.0 / self.scale)
-            let newCenter = layoutManager.boundingRect(forGlyphRange: NSRange(location: centerGlyphIndex, length: 1), in: textContainer)
-            let scrollPoint = NSPoint(x: round(point.x - newCenterFromClipOrigin.x),
-                                      y: round(newCenter.midY - newCenterFromClipOrigin.y))
-            self.scroll(scrollPoint)
-        }
+        let newCenterFromClipOrigin = centerFromClipOrigin.scaled(to: 1.0 / self.scale)
+        let glyphRange = NSRange(location: centerGlyphIndex, length: 1)
+        let newCenter = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+        let scrollPoint = NSPoint(x: point.x, y: newCenter.midY).offset(by: -newCenterFromClipOrigin)
+        self.scroll(scrollPoint)
     }
     
     
@@ -209,37 +193,35 @@ extension NSTextView {
         set {
             guard newValue != self.wrapsLines else { return }
             
-            guard
-                let scrollView = self.enclosingScrollView,
-                let textContainer = self.textContainer
-                else { return assertionFailure() }
+            guard let textContainer = self.textContainer else { return assertionFailure() }
             
             let visibleRange = self.visibleRange
             let isVertical = (self.layoutOrientation == .vertical)
             
-            textContainer.widthTracksTextView = newValue
-            if newValue {
-                let contentSize = scrollView.contentSize
-                textContainer.size.width = (isVertical ? contentSize.height : contentSize.width) / self.scale
-                self.setConstrainedFrameSize(contentSize)
+            if isVertical {
+                self.enclosingScrollView?.hasVerticalScroller = !newValue
+                self.isVerticallyResizable = !newValue
             } else {
+                self.enclosingScrollView?.hasHorizontalScroller = !newValue
+                self.isHorizontallyResizable = !newValue
+            }
+            
+            if newValue {
+                let width = self.visibleRect.width
+                self.frame.size[keyPath: isVertical ? \NSSize.height : \NSSize.width] = width * self.scale
+                textContainer.size.width = width
+                textContainer.widthTracksTextView = true
+            } else {
+                textContainer.widthTracksTextView = false
                 textContainer.size = self.infiniteSize
             }
             
-            if isVertical {
-                self.autoresizingMask = newValue ? .height : .none
-                self.isVerticallyResizable = !newValue
-                self.enclosingScrollView?.hasVerticalScroller = !newValue
-            } else {
-                self.autoresizingMask = newValue ? .width : .none
-                self.isHorizontallyResizable = !newValue
-                self.enclosingScrollView?.hasHorizontalScroller = !newValue
-            }
-            self.sizeToFit()
-            
             if let visibleRange = visibleRange, var visibleRect = self.boundingRect(for: visibleRange) {
+                if self.baseWritingDirection == .rightToLeft {
+                    visibleRect.origin.x = self.frame.width
+                }
                 visibleRect.size.width = 0
-                visibleRect = visibleRect.inset(by: -self.textContainerOrigin)
+                visibleRect = visibleRect.inset(by: -self.textContainerInset)
                 self.scrollToVisible(visibleRect)
             }
         }

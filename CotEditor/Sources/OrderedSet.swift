@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2017-2018 1024jp
+//  © 2017-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 //  limitations under the License.
 //
 
-struct OrderedSet<Element: Hashable>: RandomAccessCollection, Hashable {
+struct OrderedSet<Element: Hashable>: RandomAccessCollection {
     
     typealias Index = Array<Element>.Index
     
@@ -87,9 +87,12 @@ struct OrderedSet<Element: Hashable>: RandomAccessCollection, Hashable {
     
     
     /// return a new set with the elements that are common to both this set and the given sequence.
-    func intersection<S: Sequence>(_ other: S) -> OrderedSet<Element> where S.Element == Element {
+    func intersection<S: Sequence>(_ other: S) -> Self where S.Element == Element {
         
-        return OrderedSet(self.elements.filter { other.contains($0) })
+        var set = OrderedSet()
+        set.elements = self.elements.filter { other.contains($0) }
+        
+        return set
     }
     
     
@@ -131,18 +134,20 @@ struct OrderedSet<Element: Hashable>: RandomAccessCollection, Hashable {
     
     
     /// remove the the element at the position from the set.
-    mutating func remove(at index: Index) {
+    @discardableResult
+    mutating func remove(at index: Index) -> Element {
         
-        self.elements.remove(at: index)
+        return self.elements.remove(at: index)
     }
     
     
     /// remove the specified element from the set.
-    mutating func remove(_ element: Element) {
+    @discardableResult
+    mutating func remove(_ element: Element) -> Element? {
         
-        guard let index = self.index(of: element) else { return }
+        guard let index = self.firstIndex(of: element) else { return nil }
         
-        self.remove(at: index)
+        return self.remove(at: index)
     }
     
 }

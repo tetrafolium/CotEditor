@@ -27,7 +27,7 @@
 import XCTest
 @testable import CotEditor
 
-class ShortcutTests: XCTestCase {
+final class ShortcutTests: XCTestCase {
     
     func testKeySpecCharsCreation() {
         
@@ -65,5 +65,5 @@ class ShortcutTests: XCTestCase {
         let delete = String(UnicodeScalar(NSDeleteCharacter)!)
         XCTAssertEqual(Shortcut(keySpecChars: "@" + delete).description, "⌘⌦")
     }
-
+    
 }

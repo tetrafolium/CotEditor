@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -26,22 +26,6 @@
 
 import Cocoa
 
-private struct SerializationKey {
-    
-    static let readingEncoding = "readingEncoding"
-    static let syntaxStyle = "syntaxStyle"
-    static let autosaveIdentifier = "autosaveIdentifier"
-    static let isVerticalText = "isVerticalText"
-    static let isTransient = "isTransient"
-}
-
-
-private let uniqueFileIDLength = 13
-
-
-
-// MARK: -
-
 final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     
     // MARK: Notification Names
@@ -49,7 +33,18 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     static let didChangeEncodingNotification = Notification.Name("DocumentDidChangeEncoding")
     static let didChangeLineEndingNotification = Notification.Name("DocumentDidChangeLineEnding")
     static let didChangeSyntaxStyleNotification = Notification.Name("DocumentDidChangeSyntaxStyle")
-
+    
+    
+    // MARK: Enums
+    
+    private enum SerializationKey {
+        
+        static let readingEncoding = "readingEncoding"
+        static let syntaxStyle = "syntaxStyle"
+        static let autosaveIdentifier = "autosaveIdentifier"
+        static let isVerticalText = "isVerticalText"
+        static let isTransient = "isTransient"
+    }
     
     
     // MARK: Public Properties
@@ -81,7 +76,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     private var isExternalUpdateAlertShown = false
     private var fileData: Data?
     private var shouldSaveXattr = true
-    private var autosaveIdentifier: String
+    private var autosaveIdentifier: String = UUID().uuidString
     @objc private dynamic var isExecutable = false  // bind in save panel accessory view
     
     private var lastSavedData: Data?  // temporal data used only within saving process
@@ -95,9 +90,6 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         
         // [caution] This method may be called from a background thread due to concurrent-opening.
         
-        let uuid = UUID().uuidString
-        self.autosaveIdentifier = String(uuid.prefix(uniqueFileIDLength))
-        
         let encoding = String.Encoding(rawValue: UserDefaults.standard[.encodingInNew])
         self.encoding = String.availableStringEncodings.contains(encoding) ? encoding : .utf8
         if self.encoding == .utf8 {
@@ -107,12 +99,8 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         self.syntaxParser = SyntaxParser(textStorage: self.textStorage)
         self.syntaxParser.style = SyntaxManager.shared.setting(name: UserDefaults.standard[.syntaxStyle]!) ?? SyntaxStyle()
         
-        // use the encoding user selected in open panel, if exists
-        if let accessorySelectedEncoding = (DocumentController.shared as! DocumentController).accessorySelectedEncoding {
-            self.readingEncoding = accessorySelectedEncoding
-        } else {
-            self.readingEncoding = String.Encoding(rawValue: UserDefaults.standard[.encodingInOpen])
-        }
+        // use the encoding selected by the user in the open panel, if exists
+        self.readingEncoding = (DocumentController.shared as! DocumentController).accessorySelectedEncoding ?? .autoDetection
         
         super.init()
         
@@ -126,17 +114,17 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     /// store internal document state
     override func encodeRestorableState(with coder: NSCoder) {
         
+        super.encodeRestorableState(with: coder)
+        
         coder.encode(Int(self.encoding.rawValue), forKey: SerializationKey.readingEncoding)
         coder.encode(self.autosaveIdentifier, forKey: SerializationKey.autosaveIdentifier)
         coder.encode(self.syntaxParser.style.name, forKey: SerializationKey.syntaxStyle)
         coder.encode(self.isVerticalText, forKey: SerializationKey.isVerticalText)
         coder.encode(self.isTransient, forKey: SerializationKey.isTransient)
-        
-        super.encodeRestorableState(with: coder)
     }
     
     
-    /// resume UI state
+    /// restore UI state
     override func restoreState(with coder: NSCoder) {
         
         super.restoreState(with: coder)
@@ -180,9 +168,11 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     /// whether documents use iCloud storage
     override class var usesUbiquitousStorage: Bool {
         
-        // pretend as if iCloud storage is disabled to let system give up opening the open panel on launch (2018-02 macOS 10.13)
-        if NSAppleEventManager.shared().isOpenEvent {
-            guard UserDefaults.standard[.noDocumentOnLaunchBehavior] == .openPanel else { return false }
+        // pretend as if iCloud storage is disabled to let the system give up opening the open panel on launch (2018-02 macOS 10.13)
+        if UserDefaults.standard[.noDocumentOnLaunchBehavior] != .openPanel,
+            NSAppleEventManager.shared().isOpenEvent
+        {
+            return false
         }
         
         return super.usesUbiquitousStorage
@@ -207,16 +197,11 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     /// make custom windowControllers
     override func makeWindowControllers() {
         
-        defer {
-            self.applyContentToWindow()
+        if self.windowControllers.isEmpty {  // -> A transient document already has one.
+            self.addWindowController(.instantiate(storyboard: "DocumentWindow"))
         }
         
-        // a transient document has already one
-        guard self.windowControllers.isEmpty else { return }
-        
-        let windowController = NSWindowController.instantiate(storyboard: "DocumentWindow")
-        
-        self.addWindowController(windowController)
+        self.applyContentToWindow()
     }
     
     
@@ -224,7 +209,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     override var fileURL: URL? {
         
         didSet {
-            guard self.fileURL != oldValue else { return }
+            guard fileURL != oldValue else { return }
             
             DispatchQueue.main.async { [weak self] in
                 self?.analyzer.invalidateFileInfo()
@@ -250,39 +235,38 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         assert(Thread.isMainThread)
         
         // once force-close all sheets
-        //   -> Presented errors will be displayed again after the revert automatically (since OS X 10.10).
+        // -> Presented errors will be displayed again after the revert automatically. (since OS X 10.10)
         self.windowForSheet?.sheets.forEach { $0.close() }
         
         // store current selections
         let lastString = self.textStorage.string
         let editorStates = self.textStorage.layoutManagers
-            .compactMap { $0.textViewForBeginningOfSelection }
-            .map { (textView: $0, ranges: $0.selectedRanges as! [NSRange]) }
+            .compactMap(\.textViewForBeginningOfSelection)
+            .map { (textView: $0, ranges: $0.selectedRanges.map(\.rangeValue)) }
         
         try super.revert(toContentsOf: url, ofType: typeName)
+        
+        // do nothing if already no textView exists
+        guard !editorStates.isEmpty else { return }
         
         // apply to UI
         self.applyContentToWindow()
         
         // select previous ranges again
-        // -> Taking performance issue into consideration,
-        //    the selection ranges will be adjusted only when the content size is enough small.
+        // -> Taking performance issues into consideration,
+        //    the selection ranges will be adjusted only when the content size is enough small;
+        //    otherwise, just cut extra ranges off.
         let string = self.textStorage.string
-        let range = NSRange(..<self.textStorage.length)
+        let range = self.textStorage.range
         let maxLength = 50_000  // takes ca. 1.3 sec. with MacBook Pro 13-inch late 2016 (3.3 GHz)
-        let considersDiff = min(lastString.count, string.count) < maxLength
+        let considersDiff = lastString.length < maxLength || string.length < maxLength
         
         for state in editorStates {
-            state.textView.selectedRanges = {
-                guard considersDiff else {
-                    // just cut extra ranges off
-                    return state.ranges
-                        .map { $0.intersection(range) ?? NSRange(location: range.upperBound, length: 0) }
-                        .map { $0 as NSValue }
-                }
-                
-                return string.equivalentRanges(to: state.ranges, in: lastString) as [NSValue]
-            }()
+            let selectedRanges = considersDiff
+                ? string.equivalentRanges(to: state.ranges, in: lastString)
+                : state.ranges.map { $0.intersection(range) ?? NSRange(location: range.upperBound, length: 0) }
+            
+            state.textView.selectedRanges = selectedRanges.unique as [NSValue]
         }
     }
     
@@ -338,18 +322,19 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         
         // notify
         DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             NotificationCenter.default.post(name: Document.didChangeEncodingNotification, object: self)
             NotificationCenter.default.post(name: Document.didChangeLineEndingNotification, object: self)
         }
         
         // standardize line endings to LF
-        // -> Line endings replacemement by other text modifications is processed in
+        // -> Line endings replacement by other text modifications is processed in
         //    `EditorTextViewController.textView(_:shouldChangeTextInRange:replacementString:)`.
         let string = file.string.replacingLineEndings(with: .lf)
         
         // update textStorage
         assert(self.textStorage.layoutManagers.isEmpty || Thread.isMainThread)
-        self.textStorage.replaceCharacters(in: NSRange(..<self.textStorage.length), with: string)
+        self.textStorage.replaceCharacters(in: self.textStorage.range, with: string)
         
         // determine syntax style (only on the first file open)
         if self.windowForSheet == nil {
@@ -381,7 +366,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         
         // add UTF-8 BOM if needed
         if needsUTF8BOM {
-            data = data.addingUTF8BOM
+            data.insert(contentsOf: Unicode.BOM.utf8.sequence, at: 0)
         }
         
         // keep to swap later with `fileData`, but only when succeed
@@ -398,9 +383,9 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         assert(Thread.isMainThread)
         if UserDefaults.standard[.trimsTrailingWhitespaceOnSave] {
             let trimsWhitespaceOnlyLines = UserDefaults.standard[.trimsWhitespaceOnlyLines]
-            let keepsEditingPoint = (saveOperation == .autosaveInPlaceOperation || saveOperation == .autosaveElsewhereOperation)
+            let keepsEditingPoint = saveOperation.isAutoSaving
             let textView = self.textStorage.layoutManagers.lazy
-                .compactMap { $0.textViewForBeginningOfSelection }
+                .compactMap(\.textViewForBeginningOfSelection)
                 .first { !keepsEditingPoint || $0.window?.firstResponder == $0 }
             
             textView?.trimTrailingWhitespace(ignoresEmptyLines: !trimsWhitespaceOnlyLines,
@@ -412,9 +397,8 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             layoutManager.textViewForBeginningOfSelection?.breakUndoCoalescing()
         }
         
-        // modify place to create backup file
-        //   -> save backup file always in `~/Library/Autosaved Information/` directory
-        //      (The default backup URL is the same directory as the fileURL.)
+        // modify place to create backup file to save backup file always in `~/Library/Autosaved Information/` directory.
+        // -> The default backup URL is the same directory as the fileURL.
         let newURL: URL = {
             guard
                 saveOperation == .autosaveElsewhereOperation,
@@ -425,8 +409,9 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             let baseFileName = fileURL.deletingPathExtension().lastPathComponent
                 .replacingOccurrences(of: ".", with: "", options: .anchored)  // avoid file to be hidden
             
-            // append a unique string to avoid overwriting another backup file with the same file name.
-            let fileName = baseFileName + " (" + self.autosaveIdentifier + ")"
+            // append an unique string to avoid overwriting another backup file with the same file name.
+            let maxIdentifierLength = Int(NAME_MAX) - (baseFileName.length + " ().".length + fileURL.pathExtension.length)
+            let fileName = baseFileName + " (" + self.autosaveIdentifier.prefix(maxIdentifierLength) + ")"
             
             return autosaveDirectoryURL.appendingPathComponent(fileName).appendingPathExtension(fileURL.pathExtension)
         }()
@@ -442,8 +427,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             
             // apply syntax style that is inferred from the file name or the shebang
             if saveOperation == .saveAsOperation {
-                let fileName = url.lastPathComponent
-                if let styleName = SyntaxManager.shared.settingName(documentFileName: fileName)
+                if let styleName = SyntaxManager.shared.settingName(documentFileName: url.lastPathComponent)
                     ?? SyntaxManager.shared.settingName(documentContent: self.string)
                     // -> Due to the async-saving, self.string can be changed from the actual saved contents.
                     //    But we don't care about that.
@@ -452,11 +436,9 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
                 }
             }
             
-            switch saveOperation {
-            case .saveOperation, .saveAsOperation, .saveToOperation:
+            if !saveOperation.isAutoSaving {
                 self.analyzer.invalidateFileInfo()
                 ScriptManager.shared.dispatchEvent(documentSaved: self)
-            case .autosaveAsOperation, .autosaveElsewhereOperation, .autosaveInPlaceOperation: break
             }
         }
     }
@@ -478,7 +460,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             try url.setExtendedAttribute(data: encoding.xattrEncodingData, for: FileExtendedAttributeName.encoding)
         }
         if UserDefaults.standard[.savesTextOrientation] {
-            try url.setExtendedAttribute(data: isVerticalText ? Data(bytes: [1]) : nil, for: FileExtendedAttributeName.verticalText)
+            try url.setExtendedAttribute(data: isVerticalText ? Data([1]) : nil, for: FileExtendedAttributeName.verticalText)
         }
         
         if saveOperation != .autosaveElsewhereOperation {
@@ -502,7 +484,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         var attributes = try super.fileAttributesToWrite(to: url, ofType: typeName, for: saveOperation, originalContentsURL: absoluteOriginalContentsURL)
         
         // give the execute permission if user requested
-        if self.isExecutable, (saveOperation == .saveOperation || saveOperation == .saveAsOperation) {
+        if self.isExecutable, !saveOperation.isAutoSaving {
             let permissions: UInt16 = (self.fileAttributes?[.posixPermissions] as? UInt16) ?? 0o644  // ???: Is the default permission really always 644?
             attributes[FileAttributeKey.posixPermissions.rawValue] = permissions | S_IXUSR
         }
@@ -521,19 +503,16 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     /// prepare save panel
     override func prepareSavePanel(_ savePanel: NSSavePanel) -> Bool {
         
-        // disable hide extension checkbox
-        // -> Because it doesn't work.
-        savePanel.isExtensionHidden = false
-        savePanel.canSelectHiddenExtension = false
-        
-        // set default file extension in a hacky way (2018-02 on macOS 10.13 SDK for macOS 10.11 - 10.13)
+        // set default file extension in a hacky way (2018-02 on macOS 10.13 SDK for macOS 10.11 - 10.14)
         savePanel.allowedFileTypes = nil  // nil allows setting any extension
-        if let fileType = self.fileType,
-           let pathExtension = self.fileNameExtension(forType: fileType, saveOperation: .saveOperation) {
+        if
+            let fileType = self.fileType,
+            let pathExtension = self.fileNameExtension(forType: fileType, saveOperation: .saveOperation)
+        {
             // set once allowedFileTypes, so that initial filename selection excludes the file extension
             savePanel.allowedFileTypes = [pathExtension]
             
-            // disable immediately in the next runloop to allow set other extensions
+            // disable it immediately in the next runloop to allow setting other extensions
             DispatchQueue.main.async {
                 savePanel.allowedFileTypes = nil
             }
@@ -582,9 +561,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             let object = delegate as? NSObject,
             let objcClass = objc_getClass(object.className) as? AnyClass,
             let method = class_getMethodImplementation(objcClass, selector)
-            else {
-                return super.canClose(withDelegate: delegate, shouldClose: shouldCloseSelector, contextInfo: contextInfo)
-            }
+            else { return super.canClose(withDelegate: delegate, shouldClose: shouldCloseSelector, contextInfo: contextInfo) }
         
         typealias Signature = @convention(c) (NSObject, Selector, NSDocument, Bool, UnsafeMutableRawPointer) -> Void
         let function = unsafeBitCast(method, to: Signature.self)
@@ -616,24 +593,29 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         printView.documentShowsInvisibles = viewController.showsInvisibles
         printView.documentShowsLineNumber = viewController.showsLineNumber
         printView.baseWritingDirection = viewController.writingDirection
+        printView.ligature = UserDefaults.standard[.ligature] ? .standard : .none
         
         // set font for printing
-        printView.font = {
-            if UserDefaults.standard[.setPrintFont] {  // == use printing font
-                return NSFont(name: UserDefaults.standard[.printFontName]!,
-                              size: UserDefaults.standard[.printFontSize])
-            }
-            return viewController.font
-        }()
+        printView.font = UserDefaults.standard[.setPrintFont]
+            ? NSFont(name: UserDefaults.standard[.printFontName]!, size: UserDefaults.standard[.printFontSize])
+            : viewController.font
         
         // [caution] need to set string after setting other properties
         printView.string = self.textStorage.string
         
+        // detect URLs manually (2019-05 macOS 10.14).
+        // -> TextView anyway links all URLs in the printed PDF even the auto URL detection is disabled,
+        //    but then, multiline-URLs over a page break would be broken. (cf. #958)
+        printView.detectLink()
+        
         // create print operation
-        let printOperation = NSPrintOperation(view: printView, printInfo: self.printInfo)
-        printOperation.printInfo.dictionary().addEntries(from: printSettings)
+        let printInfo = self.printInfo
+        printInfo.dictionary().addEntries(from: printSettings)
+        let printOperation = NSPrintOperation(view: printView, printInfo: printInfo)
         printOperation.showsProgressPanel = true
-        printOperation.canSpawnSeparateThread = true  // display print progress panel as a sheet
+        // -> This flag looks fancy but needs to disable
+        //    since NSTextView seems to cannot print in a background thraed (macOS -10.15).
+        printOperation.canSpawnSeparateThread = false
         
         // setup print panel
         printOperation.printPanel.addAccessoryController(self.printPanelAccessoryController)
@@ -660,7 +642,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             
             return printInfo
         }
-
+        
         set {
             super.printInfo = newValue
         }
@@ -687,29 +669,36 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         // [caution] DO NOT invoke `super.presentedItemDidChange()` that reverts document automatically if autosavesInPlace is enable.
 //        super.presentedItemDidChange()
         
-        let option = UserDefaults.standard[.documentConflictOption]
-        
         guard
-            option != .ignore,
+            UserDefaults.standard[.documentConflictOption] != .ignore,
             !self.isExternalUpdateAlertShown,  // don't check twice if already notified
             let fileURL = self.fileURL
             else { return }
         
         var didChange = false
         var fileModificationDate: Date?
-        NSFileCoordinator(filePresenter: self).coordinate(readingItemAt: fileURL, options: .withoutChanges, error: nil) { (newURL) in  // FILE_READ
-            // ignore if file's modificationDate is the same as document's modificationDate
-            fileModificationDate = (try? FileManager.default.attributesOfItem(atPath: newURL.path))?[.modificationDate] as? Date
-            guard fileModificationDate != self.fileModificationDate else { return }
-            
-            // check if file contents was changed from the stored file data
-            let data = try? Data(contentsOf: newURL)
+        var coordinatorError: NSError?
+        NSFileCoordinator(filePresenter: self).coordinate(readingItemAt: fileURL, options: .withoutChanges, error: &coordinatorError) { (newURL) in  // FILE_READ
+            let data: Data
+            do {
+                // ignore if file's modificationDate is the same as document's modificationDate
+                fileModificationDate = try FileManager.default.attributesOfItem(atPath: newURL.path)[.modificationDate] as? Date
+                guard fileModificationDate != self.fileModificationDate else { return }
+                
+                // check if file contents was changed from the stored file data
+                data = try Data(contentsOf: newURL, options: [.mappedIfSafe])
+            } catch {
+                return assertionFailure(error.localizedDescription)
+            }
             didChange = (data != self.fileData)
+        }
+        if let error = coordinatorError {
+            assertionFailure(error.localizedDescription)
         }
         
         guard didChange else {
             // update the document's fileModificationDate for a workaround (2014-03 by 1024jp)
-            // If not, an alert shows up when user saves the file.
+            // -> If not, an alert shows up when user saves the file.
             DispatchQueue.main.async { [weak self] in
                 guard
                     let lastModificationDate = self?.fileModificationDate,
@@ -724,13 +713,13 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         
         // notify about external file update
         DispatchQueue.main.async { [weak self] in
-            switch option {
-            case .ignore:
-                assertionFailure()
-            case .notify:
-                self?.showUpdatedByExternalProcessAlert()
-            case .revert:
-                self?.revertWithoutAsking()
+            switch UserDefaults.standard[.documentConflictOption] {
+                case .ignore:
+                    assertionFailure()
+                case .notify:
+                    self?.showUpdatedByExternalProcessAlert()
+                case .revert:
+                    self?.revertWithoutAsking()
             }
         }
     }
@@ -740,18 +729,18 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         
         switch menuItem.action {
-        case #selector(changeEncoding(_:))?:
-            let encodingTag = self.hasUTF8BOM ? -Int(self.encoding.rawValue) : Int(self.encoding.rawValue)
-            menuItem.state = (menuItem.tag == encodingTag) ? .on : .off
+            case #selector(changeEncoding(_:)):
+                let encodingTag = self.hasUTF8BOM ? -Int(self.encoding.rawValue) : Int(self.encoding.rawValue)
+                menuItem.state = (menuItem.tag == encodingTag) ? .on : .off
             
-        case #selector(changeLineEnding(_:))?:
-            menuItem.state = (LineEnding(index: menuItem.tag) == self.lineEnding) ? .on : .off
+            case #selector(changeLineEnding(_:)):
+                menuItem.state = (LineEnding(index: menuItem.tag) == self.lineEnding) ? .on : .off
             
-        case #selector(changeSyntaxStyle(_:))?:
-            let name = self.syntaxParser.style.name
-            menuItem.state = (menuItem.title == name) ? .on : .off
+            case #selector(changeSyntaxStyle(_:)):
+                let name = self.syntaxParser.style.name
+                menuItem.state = (menuItem.title == name) ? .on : .off
             
-        default: break
+            default: break
         }
         
         return super.validateMenuItem(menuItem)
@@ -762,7 +751,7 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
     func didMakeDocumentForExisitingFile(url: URL) {
         
         // [caution] This method may be called from a background thread due to concurrent-opening.
-        // This method won't be invoked on Resume. (2015-01-26)
+        // -> This method won't be invoked on Resume. (2015-01-26)
         
         ScriptManager.shared.dispatchEvent(documentOpened: self)
     }
@@ -963,8 +952,8 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
         // change encoding interactively
         self.performActivity(withSynchronousWaiting: true) { [unowned self] (activityCompletionHandler) in
             
-            let completionHandler = { (didChange: Bool) in
-                if !didChange {
+            let completionHandler = { [weak self] (didChange: Bool) in
+                if !didChange, let self = self {
                     // reset toolbar selection for in case if the operation was invoked from the toolbar popup
                     NotificationCenter.default.post(name: Document.didChangeEncodingNotification, object: self)
                 }
@@ -996,45 +985,45 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             let documentWindow = self.windowForSheet!
             alert.beginSheetModal(for: documentWindow) { [unowned self] (returnCode: NSApplication.ModalResponse) in
                 switch returnCode {
-                case .alertFirstButtonReturn:  // = Convert
-                    do {
-                        try self.changeEncoding(to: encoding, withUTF8BOM: withUTF8BOM, lossy: false)
-                        completionHandler(true)
-                    } catch {
-                        self.presentErrorAsSheet(error, recoveryHandler: completionHandler)
+                    case .alertFirstButtonReturn:  // = Convert
+                        do {
+                            try self.changeEncoding(to: encoding, withUTF8BOM: withUTF8BOM, lossy: false)
+                            completionHandler(true)
+                        } catch {
+                            self.presentErrorAsSheet(error, recoveryHandler: completionHandler)
                     }
                     
-                case .alertSecondButtonReturn:  // = Reinterpret
-                    // ask user if document is edited
-                    if self.isDocumentEdited {
-                        let alert = NSAlert()
-                        alert.messageText = "The document has unsaved changes.".localized
-                        alert.informativeText = String(format: "Do you want to discard the changes and reopen the document using “%@”?".localized, encodingName)
-                        alert.addButton(withTitle: "Cancel".localized)
-                        alert.addButton(withTitle: "Discard Changes".localized)
-                        
-                        documentWindow.attachedSheet?.orderOut(self)  // close previous sheet
-                        let returnCode = alert.runModal(for: documentWindow)  // wait for sheet close
-                        
-                        guard returnCode != .alertSecondButtonReturn else {  // = Cancel
-                            completionHandler(false)
-                            return
+                    case .alertSecondButtonReturn:  // = Reinterpret
+                        // ask user if document is edited
+                        if self.isDocumentEdited {
+                            let alert = NSAlert()
+                            alert.messageText = "The document has unsaved changes.".localized
+                            alert.informativeText = String(format: "Do you want to discard the changes and reopen the document using “%@”?".localized, encodingName)
+                            alert.addButton(withTitle: "Cancel".localized)
+                            alert.addButton(withTitle: "Discard Changes".localized)
+                            
+                            documentWindow.attachedSheet?.orderOut(self)  // close previous sheet
+                            let returnCode = alert.runModal(for: documentWindow)  // wait for sheet close
+                            
+                            guard returnCode == .alertSecondButtonReturn else {  // = Discard Changes
+                                completionHandler(false)
+                                return
+                            }
                         }
+                        
+                        // reinterpret
+                        do {
+                            try self.reinterpret(encoding: encoding)
+                            completionHandler(true)
+                        } catch {
+                            NSSound.beep()
+                            self.presentErrorAsSheet(error, recoveryHandler: completionHandler)
                     }
                     
-                    // reinterpret
-                    do {
-                        try self.reinterpret(encoding: encoding)
-                        completionHandler(true)
-                    } catch {
-                        NSSound.beep()
-                        self.presentErrorAsSheet(error, recoveryHandler: completionHandler)
-                    }
+                    case .alertThirdButtonReturn:  // = Cancel
+                        completionHandler(false)
                     
-                case .alertThirdButtonReturn:  // = Cancel
-                    completionHandler(false)
-                    
-                default: preconditionFailure()
+                    default: preconditionFailure()
                 }
             }
         }
@@ -1130,12 +1119,16 @@ final class Document: NSDocument, AdditionalDocumentPreparing, EncodingHolder {
             alert.addButton(withTitle: "Update".localized)
             
             // mark the alert as critical in order to interpret other sheets already attached
-            if self.windowForSheet?.attachedSheet != nil {
+            guard let documentWindow = self.windowForSheet else {
+                activityCompletionHandler()
+                assertionFailure()
+                return
+            }
+            if documentWindow.attachedSheet != nil {
                 alert.alertStyle = .critical
             }
             
-            alert.beginSheetModal(for: self.windowForSheet!) { returnCode in
-                
+            alert.beginSheetModal(for: documentWindow) { returnCode in
                 if returnCode == .alertSecondButtonReturn {  // == Revert
                     self.revertWithoutAsking()
                 }
@@ -1198,12 +1191,12 @@ private struct ReinterpretationError: LocalizedError {
     var errorDescription: String? {
         
         switch self.kind {
-        case .noFile:
-            return "The document doesn’t have a file to reinterpret.".localized
+            case .noFile:
+                return "The document doesn’t have a file to reinterpret.".localized
             
-        case .reinterpretationFailed(let fileURL):
-            return String(format: "The file “%@” couldn’t be reinterpreted using text encoding “%@”.".localized,
-                          fileURL.lastPathComponent, String.localizedName(of: self.encoding))
+            case .reinterpretationFailed(let fileURL):
+                return String(format: "The file “%@” couldn’t be reinterpreted using text encoding “%@”.".localized,
+                              fileURL.lastPathComponent, String.localizedName(of: self.encoding))
         }
     }
     
@@ -1211,11 +1204,11 @@ private struct ReinterpretationError: LocalizedError {
     var recoverySuggestion: String? {
         
         switch self.kind {
-        case .noFile:
-            return nil
+            case .noFile:
+                return nil
             
-        case .reinterpretationFailed:
-            return "The file may have been saved using a different text encoding, or it may not be a text file.".localized
+            case .reinterpretationFailed:
+                return "The file may have been saved using a different text encoding, or it may not be a text file.".localized
         }
     }
     
@@ -1248,11 +1241,11 @@ private struct EncodingError: LocalizedError, RecoverableError {
     var recoverySuggestion: String? {
         
         switch self.kind {
-        case .lossySaving:
-            return "Do you want to continue processing?".localized
+            case .lossySaving:
+                return "Do you want to continue processing?".localized
             
-        case .lossyConversion:
-            return "Do you want to change encoding and show incompatible characters?".localized
+            case .lossyConversion:
+                return "Do you want to change encoding and show incompatible characters?".localized
         }
     }
     
@@ -1260,14 +1253,14 @@ private struct EncodingError: LocalizedError, RecoverableError {
     var recoveryOptions: [String] {
         
         switch self.kind {
-        case .lossySaving:
-            return ["Show Incompatible Characters".localized,
-                    "Save Available Strings".localized,
-                    "Cancel".localized]
+            case .lossySaving:
+                return ["Show Incompatible Characters".localized,
+                        "Save Available Strings".localized,
+                        "Cancel".localized]
             
-        case .lossyConversion:
-            return ["Change Encoding".localized,
-                    "Cancel".localized]
+            case .lossyConversion:
+                return ["Change Encoding".localized,
+                        "Cancel".localized]
         }
     }
     
@@ -1275,29 +1268,29 @@ private struct EncodingError: LocalizedError, RecoverableError {
     func attemptRecovery(optionIndex recoveryOptionIndex: Int) -> Bool {
         
         switch self.kind {
-        case .lossySaving:
-            switch recoveryOptionIndex {
-            case 0:  // == Show Incompatible Characters
-                self.showIncompatibleCharacters()
-                return false
-            case 1:  // == Save
-                return true
-            case 2:  // == Cancel
-                return false
-            default:
-                preconditionFailure()
+            case .lossySaving:
+                switch recoveryOptionIndex {
+                    case 0:  // == Show Incompatible Characters
+                        self.showIncompatibleCharacters()
+                        return false
+                    case 1:  // == Save
+                        return true
+                    case 2:  // == Cancel
+                        return false
+                    default:
+                        preconditionFailure()
             }
             
-        case .lossyConversion:
-            switch recoveryOptionIndex {
-            case 0:  // == Change Encoding
-                try? self.attempter.changeEncoding(to: self.encoding, withUTF8BOM: self.withUTF8BOM, lossy: true)
-                self.showIncompatibleCharacters()
-                return true
-            case 1:  // == Cancel
-                return false
-            default:
-                preconditionFailure()
+            case .lossyConversion:
+                switch recoveryOptionIndex {
+                    case 0:  // == Change Encoding
+                        try? self.attempter.changeEncoding(to: self.encoding, withUTF8BOM: self.withUTF8BOM, lossy: true)
+                        self.showIncompatibleCharacters()
+                        return true
+                    case 1:  // == Cancel
+                        return false
+                    default:
+                        preconditionFailure()
             }
         }
     }

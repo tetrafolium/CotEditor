@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 //
 
 import Foundation
-import YAML
+import Yams
 
 @objc protocol SyntaxHolder: AnyObject {
     
@@ -87,7 +87,7 @@ final class SyntaxManager: SettingFileManaging {
         let data = try! Data(contentsOf: url)
         let map = try! JSONDecoder().decode([SettingName: [String: [String]]].self, from: data)
         self.bundledMap = map
-        self.bundledSettingNames = map.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        self.bundledSettingNames = map.keys.sorted(options: [.localized, .caseInsensitive])
         
         // cache user styles
         self.checkUserSettings()
@@ -148,18 +148,24 @@ final class SyntaxManager: SettingFileManaging {
             return self.blankSettingDictionary
         }
         
-        guard let url = self.urlForUsedSetting(name: name) else { return nil }
+        guard
+            let url = self.urlForUsedSetting(name: name),
+            let dictionary = try? self.loadSettingDictionary(at: url)
+            else { return nil }
         
-        return try? self.loadSettingDictionary(at: url)
+        return dictionary.cocoaBindable
     }
     
     
     /// return bundled version style dictionary or nil if not exists
     func bundledSettingDictionary(name: SettingName) -> StyleDictionary? {
         
-        guard let url = self.urlForBundledSetting(name: name) else { return nil }
+        guard
+            let url = self.urlForBundledSetting(name: name),
+            let dictionary = try? self.loadSettingDictionary(at: url)
+            else { return nil }
         
-        return try? self.loadSettingDictionary(at: url)
+        return dictionary.cocoaBindable
     }
     
     
@@ -169,19 +175,17 @@ final class SyntaxManager: SettingFileManaging {
         // create directory to save in user domain if not yet exist
         try self.prepareUserSettingDirectory()
         
-        // sanitize -> remove empty mapping dicts
-        for key in SyntaxKey.mappingKeys {
-            (settingDictionary[key.rawValue] as? NSMutableArray)?.remove([:])
+        // sort items
+        let beginStringSort = NSSortDescriptor(key: SyntaxDefinitionKey.beginString.rawValue, ascending: true,
+                                               selector: #selector(NSString.caseInsensitiveCompare))
+        for key in SyntaxType.allCases {
+            (settingDictionary[key.rawValue] as? NSMutableArray)?.sort(using: [beginStringSort])
         }
         
-        // sort
-        let descriptors = [NSSortDescriptor(key: SyntaxDefinitionKey.beginString.rawValue, ascending: true,
-                                            selector: #selector(NSString.caseInsensitiveCompare)),
-                           NSSortDescriptor(key: SyntaxDefinitionKey.keyString.rawValue, ascending: true,
-                                            selector: #selector(NSString.caseInsensitiveCompare))]
-        let syntaxDictKeys = SyntaxType.allCases.map { $0.rawValue } + [SyntaxKey.outlineMenu.rawValue, SyntaxKey.completions.rawValue]
-        for key in syntaxDictKeys {
-            (settingDictionary[key] as? NSMutableArray)?.sort(using: descriptors)
+        let keyStringSort = NSSortDescriptor(key: SyntaxDefinitionKey.keyString.rawValue, ascending: true,
+                                             selector: #selector(NSString.caseInsensitiveCompare))
+        for key in [SyntaxKey.outlineMenu, .completions] {
+            (settingDictionary[key.rawValue] as? NSMutableArray)?.sort(using: [keyStringSort])
         }
         
         // save
@@ -200,8 +204,8 @@ final class SyntaxManager: SettingFileManaging {
             }
         } else {
             // save file to user domain
-            let yamlData = try YAMLSerialization.yamlData(with: settingDictionary, options: kYAMLWriteOptionSingleDocument)
-            try yamlData.write(to: saveURL, options: .atomic)
+            let yamlString = try Yams.dump(object: settingDictionary.yamlEncodable)
+            try yamlString.write(to: saveURL, atomically: true, encoding: .utf8)
         }
         
         // invalidate current cache
@@ -276,8 +280,8 @@ final class SyntaxManager: SettingFileManaging {
         
         // add to recent styles list
         let maximumRecentStyleCount = max(0, UserDefaults.standard[.maximumRecentStyleCount])
-        var recentStyleNames = UserDefaults.standard[.recentStyleNames]!
-        recentStyleNames.remove(name)
+        var recentStyleNames = UserDefaults.standard[.recentStyleNames] ?? []
+        recentStyleNames.removeFirst(name)
         recentStyleNames.insert(name, at: 0)
         UserDefaults.standard[.recentStyleNames] = Array(recentStyleNames.prefix(maximumRecentStyleCount))
         
@@ -287,13 +291,8 @@ final class SyntaxManager: SettingFileManaging {
     
     var cachedSettings: [SettingName: Setting] {
         
-        get {
-            return self._cachedSettings.value
-        }
-        
-        set {
-            self._cachedSettings.mutate { $0 = newValue }
-        }
+        get { self._cachedSettings.value }
+        set { self._cachedSettings.mutate { $0 = newValue } }
     }
     private let _cachedSettings = Atomic<[SettingName: Setting]>([:])
     
@@ -312,7 +311,7 @@ final class SyntaxManager: SettingFileManaging {
     func checkUserSettings() {
         
         // load mapping definitions from style files in user domain
-        let mappingKeys = SyntaxKey.mappingKeys.map { $0.rawValue }
+        let mappingKeys = SyntaxKey.mappingKeys.map(\.rawValue)
         let userMap: [SettingName: [String: [String]]] = self.userSettingFileURLs.reduce(into: [:]) { (dict, url) in
             guard let style = try? self.loadSettingDictionary(at: url) else { return }
             let settingName = self.settingName(from: url)
@@ -325,8 +324,7 @@ final class SyntaxManager: SettingFileManaging {
         let map = self.bundledMap.merging(userMap) { (_, new) in new }
         
         // sort styles alphabetically
-        self.settingNames = map.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
-        
+        self.settingNames = map.keys.sorted(options: [.localized, .caseInsensitive])
         // remove styles not exist
         UserDefaults.standard[.recentStyleNames]?.removeAll { !self.settingNames.contains($0) }
         
@@ -354,8 +352,8 @@ final class SyntaxManager: SettingFileManaging {
     /// - Throws: `CocoaError`
     private func loadSettingDictionary(at fileURL: URL) throws -> StyleDictionary {
         
-        let data = try Data(contentsOf: fileURL)
-        let yaml = try YAMLSerialization.object(withYAMLData: data, options: kYAMLReadOptionMutableContainersAndLeaves)
+        let string = try String(contentsOf: fileURL)
+        let yaml = try Yams.load(yaml: string)
         
         guard let styleDictionary = yaml as? StyleDictionary else {
             throw CocoaError.error(.fileReadCorruptFile, url: fileURL)
@@ -370,7 +368,7 @@ final class SyntaxManager: SettingFileManaging {
         
         guard let bundledStyle = self.bundledSettingDictionary(name: name) else { return false }
         
-        return NSDictionary(dictionary: style).isEqual(to: bundledStyle)
+        return style == bundledStyle
     }
     
 }
@@ -410,6 +408,110 @@ private extension StringProtocol where Self.Index == String.Index {
 
 
 
+// MARK: - Cocoa Bindings Support
+
+private extension SyntaxManager.StyleDictionary {
+    
+    /// Convert to NSObject-based collection for Cocoa-Bindings recursively.
+    var cocoaBindable: Self {
+        
+        return self.mapValues(Self.convertToCocoaBindable)
+    }
+    
+    
+    /// Convert to YAML serialization comaptible colletion recursively.
+    var yamlEncodable: Self {
+        
+        return self.mapValues(Self.convertToYAMLEncodable)
+    }
+    
+    
+    // MARK: Private Methods
+    
+    private static func convertToYAMLEncodable(_ item: Any) -> Any {
+        
+        switch item {
+            case let dictionary as NSDictionary:
+                return (dictionary as! Dictionary).mapValues(Self.convertToYAMLEncodable)
+            case let array as NSArray:
+                return (array as Array).map(Self.convertToYAMLEncodable)
+            case let bool as Bool:
+                return bool
+            case let string as String:
+                return string
+            default:
+                assertionFailure("\(type(of: item))")
+                return item
+        }
+    }
+    
+    
+    private static func convertToCocoaBindable(_ item: Any) -> Any {
+        
+        switch item {
+            case let dictionary as Dictionary:
+                return NSMutableDictionary(dictionary: dictionary.mapValues(convertToCocoaBindable))
+            case let array as [Any]:
+                return NSMutableArray(array: array.map(convertToCocoaBindable))
+            case let date as Date:
+                return ISO8601DateFormatter.string(from: date, timeZone: .current,
+                                                   formatOptions: [.withFullDate, .withDashSeparatorInDate])
+            default:
+                return item
+        }
+    }
+    
+}
+
+
+
+// MARK: - Equitability Support
+
+private extension SyntaxManager.StyleDictionary {
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        
+        return areEqual(lhs, rhs)
+    }
+    
+    
+    // MARK: Private Methods
+    
+    /// Check the equitability recursively.
+    ///
+    /// This comparison is designed and valid only for StyleDictionary.
+    private static func areEqual(_ lhs: Any, _ rhs: Any) -> Bool {
+        
+        switch (lhs, rhs) {
+            case let (lhs, rhs) as (Dictionary, Dictionary):
+                guard lhs.count == rhs.count else { return false }
+                
+                return lhs.allSatisfy { (key, lhsValue) -> Bool in
+                    guard let rhsValue = rhs[key] else { return false }
+                    
+                    return areEqual(lhsValue, rhsValue)
+                }
+            
+            case let (lhs, rhs) as ([Any], [Any]):
+                guard lhs.count == rhs.count else { return false }
+                
+                // check elements equitability by ignoring the order
+                var rhs = rhs
+                for lhsValue in lhs {
+                    guard let rhsIndex = rhs.firstIndex(where: { areEqual(lhsValue, $0) }) else { return false }
+                    rhs.remove(at: rhsIndex)
+                }
+                return true
+            
+            default:
+                return type(of: lhs) == type(of: rhs) && String(describing: lhs) == String(describing: rhs)
+        }
+    }
+    
+}
+
+
+
 // MARK: - Migration
 
 extension SyntaxManager {
@@ -436,12 +538,12 @@ extension SyntaxManager {
             .filter { $0.0 != "styleName" }   // remove lagacy "styleName" key
             .mapKeys { $0.replacingOccurrences(of: "Array", with: "") }  // remove all `Array` suffix from dict keys
         
-        let yamlData = try YAMLSerialization.yamlData(with: newStyle, options: kYAMLWriteOptionSingleDocument)
+        let yamlString = try Yams.dump(object: newStyle)
         
         let styleName = self.settingName(from: fileURL)
         let destURL = self.preparedURLForUserSetting(name: styleName)
         coordinator.coordinate(writingItemAt: destURL, error: nil) { (newWritingURL) in
-            try? yamlData.write(to: newWritingURL, options: .atomic)
+            try? yamlString.write(to: newWritingURL, atomically: true, encoding: .utf8)
         }
     }
     

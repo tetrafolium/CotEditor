@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2019 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -311,6 +311,9 @@ extension SettingFileManaging {
         { (newReadingURL, newWritingURL) in
             
             do {
+                if newWritingURL.isReachable {
+                    try FileManager.default.removeItem(at: newWritingURL)
+                }
                 try FileManager.default.copyItem(at: newReadingURL, to: newWritingURL)
                 
                 var newWritingURL = newWritingURL
@@ -444,14 +447,14 @@ enum InvalidNameError: LocalizedError {
     var errorDescription: String? {
         
         switch self {
-        case .empty:
-            return "Name can’t be empty.".localized
-        case .containSlash:
-            return "You can’t use a name that contains “/”.".localized
-        case .startWithDot:
-            return "You can’t use a name that begins with a dot “.”.".localized
-        case .duplicated(let name):
-            return String(format: "The name “%@” is already taken.".localized, name)
+            case .empty:
+                return "Name can’t be empty.".localized
+            case .containSlash:
+                return "You can’t use a name that contains “/”.".localized
+            case .startWithDot:
+                return "You can’t use a name that begins with a dot “.”.".localized
+            case .duplicated(let name):
+                return String(format: "The name “%@” is already taken.".localized, name)
         }
     }
     
@@ -482,12 +485,12 @@ struct SettingFileError: LocalizedError {
     var errorDescription: String? {
         
         switch self.kind {
-        case .deletionFailed:
-            return String(format: "“%@” couldn’t be deleted.".localized, self.name)
-        case .importFailed:
-            return String(format: "“%@” couldn’t be imported.".localized, self.name)
-        case .noSourceFile:
-            return String(format: "No original file for “%@” was found.".localized, self.name)
+            case .deletionFailed:
+                return String(format: "“%@” couldn’t be deleted.".localized, self.name)
+            case .importFailed:
+                return String(format: "“%@” couldn’t be imported.".localized, self.name)
+            case .noSourceFile:
+                return String(format: "No original file for “%@” was found.".localized, self.name)
         }
     }
     
@@ -511,12 +514,12 @@ struct ImportDuplicationError: LocalizedError, RecoverableError {
     var errorDescription: String? {
         
         switch self.type {
-        case .syntaxStyle:
-            return String(format: "A new style named “%@” will be installed, but a custom style with the same name already exists.".localized, self.name)
-        case .theme:
-            return String(format: "A new theme named “%@” will be installed, but a custom theme with the same name already exists.".localized, self.name)
-        case .replacement:
-            return String(format: "A new replacement definition named “%@” will be installed, but a definition with the same name already exists.".localized, self.name)
+            case .syntaxStyle:
+                return String(format: "A new style named “%@” will be installed, but a custom style with the same name already exists.".localized, self.name)
+            case .theme:
+                return String(format: "A new theme named “%@” will be installed, but a custom theme with the same name already exists.".localized, self.name)
+            case .replacement:
+                return String(format: "A new replacement definition named “%@” will be installed, but a definition with the same name already exists.".localized, self.name)
         }
     }
     
@@ -524,12 +527,12 @@ struct ImportDuplicationError: LocalizedError, RecoverableError {
     var recoverySuggestion: String? {
         
         switch self.type {
-        case .syntaxStyle:
-            return "Do you want to replace it?\nReplaced style can’t be restored.".localized
-        case .theme:
-            return "Do you want to replace it?\nReplaced theme can’t be restored.".localized
-        case .replacement:
-            return "Do you want to replace it?\nReplaced definition can’t be restored.".localized
+            case .syntaxStyle:
+                return "Do you want to replace it?\nReplaced style can’t be restored.".localized
+            case .theme:
+                return "Do you want to replace it?\nReplaced theme can’t be restored.".localized
+            case .replacement:
+                return "Do you want to replace it?\nReplaced definition can’t be restored.".localized
         }
     }
     
@@ -544,20 +547,20 @@ struct ImportDuplicationError: LocalizedError, RecoverableError {
     func attemptRecovery(optionIndex recoveryOptionIndex: Int) -> Bool {
         
         switch recoveryOptionIndex {
-        case 0:  // == Cancel
-            return false
-            
-        case 1:  // == Replace
-            do {
-                try self.replacingClosure()
-            } catch {
-                NSApp.presentError(error)
+            case 0:  // == Cancel
                 return false
-            }
-            return true
             
-        default:
-            preconditionFailure()
+            case 1:  // == Replace
+                do {
+                    try self.replacingClosure()
+                } catch {
+                    NSApp.presentError(error)
+                    return false
+                }
+                return true
+            
+            default:
+                preconditionFailure()
         }
     }
     

@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -30,14 +30,13 @@ final class IncompatibleCharactersViewController: NSViewController, Incompatible
     
     // MARK: Private Properties
     
-    private weak var scanner: IncompatibleCharacterScanner? {
+    private var scanner: IncompatibleCharacterScanner? {
         
         return self.representedObject as? IncompatibleCharacterScanner
     }
     
     @objc private dynamic var incompatibleCharacters: [IncompatibleCharacter] = []
     @objc private dynamic var characterAvailable = false
-    private var isVisible = false
     
     @IBOutlet private var incompatibleCharsController: NSArrayController?
     
@@ -60,20 +59,18 @@ final class IncompatibleCharactersViewController: NSViewController, Incompatible
     /// update content before display
     override func viewWillAppear() {
         
-        self.isVisible = true
-        self.scanner?.scan()
-        
         super.viewWillAppear()
+        
+        self.scanner?.scan()
     }
     
     
     /// clear incompatible characters markup
     override func viewDidDisappear() {
         
-        self.isVisible = false
-        self.scanner?.document?.textStorage.clearAllMarkup()
-        
         super.viewDidDisappear()
+        
+        self.scanner?.document?.textStorage.clearAllMarkup()
     }
     
     
@@ -99,9 +96,9 @@ final class IncompatibleCharactersViewController: NSViewController, Incompatible
     // MARK: Scanner Delegate
     
     /// update list constantly only if the table is visible
-    func needsUpdateIncompatibleCharacter(_ document: Document) -> Bool {
+    func shouldUpdateIncompatibleCharacter(_ document: Document) -> Bool {
         
-        return self.isVisible
+        return self.isViewShown
     }
     
     
@@ -111,7 +108,7 @@ final class IncompatibleCharactersViewController: NSViewController, Incompatible
         self.incompatibleCharacters = incompatibleCharacters
         self.characterAvailable = !incompatibleCharacters.isEmpty
         
-        let ranges = incompatibleCharacters.map { $0.range }
+        let ranges = incompatibleCharacters.map(\.range)
         
         document.textStorage.clearAllMarkup()
         document.textStorage.markup(ranges: ranges, lineEnding: document.lineEnding)
@@ -134,7 +131,7 @@ final class IncompatibleCharactersViewController: NSViewController, Incompatible
         editor.selectedRange = range
         
         // focus result
-        // -> use textView's `selectedRange` since `range` is incompatible with CRLF
+        // -> Use textView's `selectedRange` since `range` is incompatible with CRLF.
         if let textView = editor.textView {
             textView.scrollRangeToVisible(textView.selectedRange)
             textView.showFindIndicator(for: textView.selectedRange)

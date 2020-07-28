@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -36,17 +36,17 @@ extension HighlightDefinition {
     func extractor() throws -> HighlightExtractable {
         
         switch (self.isRegularExpression, self.endString) {
-        case (true, .some(let endString)):
-            return try BeginEndRegularExpressionExtractor(beginPattern: self.beginString, endPattern: endString, ignoresCase: self.ignoreCase)
+            case (true, .some(let endString)):
+                return try BeginEndRegularExpressionExtractor(beginPattern: self.beginString, endPattern: endString, ignoresCase: self.ignoreCase)
             
-        case (true, .none):
-            return try RegularExpressionExtractor(pattern: self.beginString, ignoresCase: self.ignoreCase)
+            case (true, .none):
+                return try RegularExpressionExtractor(pattern: self.beginString, ignoresCase: self.ignoreCase)
             
-        case (false, .some(let endString)):
-            return BeginEndStringExtractor(beginString: self.beginString, endString: endString, ignoresCase: self.ignoreCase)
+            case (false, .some(let endString)):
+                return BeginEndStringExtractor(beginString: self.beginString, endString: endString, ignoresCase: self.ignoreCase)
             
-        case (false, .none):
-            preconditionFailure("non-regex words should be preprocessed at SyntaxStyle.init()")
+            case (false, .none):
+                preconditionFailure("non-regex words should be preprocessed at SyntaxStyle.init()")
             
         }
     }
@@ -113,7 +113,7 @@ private struct RegularExpressionExtractor: HighlightExtractable {
         
         var options: NSRegularExpression.Options = .anchorsMatchLines
         if ignoresCase {
-            options.update(with: .caseInsensitive)
+            options.formUnion(.caseInsensitive)
         }
         
         self.regex = try NSRegularExpression(pattern: pattern, options: options)
@@ -123,7 +123,7 @@ private struct RegularExpressionExtractor: HighlightExtractable {
     func ranges(in string: String, range: NSRange, using block: (_ stop: inout Bool) -> Void) -> [NSRange] {
         
         return self.regex.matches(in: string, options: [.withTransparentBounds, .withoutAnchoringBounds], range: range, using: block)
-            .map { $0.range }
+            .map(\.range)
     }
     
 }
@@ -140,7 +140,7 @@ private struct BeginEndRegularExpressionExtractor: HighlightExtractable {
         
         var options: NSRegularExpression.Options = .anchorsMatchLines
         if ignoresCase {
-            options.update(with: .caseInsensitive)
+            options.formUnion(.caseInsensitive)
         }
         
         self.beginRegex = try NSRegularExpression(pattern: beginPattern, options: options)
@@ -151,7 +151,7 @@ private struct BeginEndRegularExpressionExtractor: HighlightExtractable {
     func ranges(in string: String, range: NSRange, using block: (_ stop: inout Bool) -> Void) -> [NSRange] {
         
         return self.beginRegex.matches(in: string, options: [.withTransparentBounds, .withoutAnchoringBounds], range: range, using: block)
-            .map { $0.range }
+            .map(\.range)
             .compactMap { beginRange in
                 let endRange = self.endRegex.rangeOfFirstMatch(in: string, options: [.withTransparentBounds, .withoutAnchoringBounds],
                                                                range: NSRange(beginRange.upperBound..<range.upperBound))

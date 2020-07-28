@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2017-2018 1024jp
+//  © 2017-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 //  limitations under the License.
 //
 
-import Foundation
+import Foundation.NSObjCRuntime
 
 enum NoDocumentOnLaunchBehavior: Int {
     
@@ -57,6 +57,14 @@ enum CursorType: Int {
 }
 
 
+enum AppearanceMode: Int {
+    
+    case `default`
+    case light
+    case dark
+}
+
+
 @objc enum PrintColorMode: Int {
     
     case blackWhite
@@ -64,9 +72,9 @@ enum CursorType: Int {
 }
 
 
-@objc enum PrintLineNmuberMode: Int, DefaultInitializable {
+@objc enum PrintVisibilityMode: Int, DefaultInitializable {
     
-    static let defaultValue: PrintLineNmuberMode = .no
+    static let defaultValue: Self = .no
     
     case no
     case sameAsDocument
@@ -74,19 +82,9 @@ enum CursorType: Int {
 }
 
 
-@objc enum PrintInvisiblesMode: Int, DefaultInitializable {
-    
-    static let defaultValue: PrintInvisiblesMode = .no
-    
-    case no
-    case sameAsDocument
-    case all
-}
-
-
 @objc enum PrintInfoType: Int, DefaultInitializable {
     
-    static let defaultValue: PrintInfoType = .none
+    static let defaultValue: Self = .none
     
     case none
     case syntaxName
@@ -99,7 +97,7 @@ enum CursorType: Int {
 
 @objc enum AlignmentType: Int, DefaultInitializable {
     
-    static let defaultValue: AlignmentType = .right
+    static let defaultValue: Self = .right
     
     case left
     case center

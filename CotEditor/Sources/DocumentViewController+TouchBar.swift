@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ private extension NSTouchBar.CustomizationIdentifier {
 extension NSTouchBarItem.Identifier {
     
     static let invisibles = NSTouchBarItem.Identifier("com.coteditor.CotEditor.TouchBarItem.invisibles")
+    static let indentGuides = NSTouchBarItem.Identifier("com.coteditor.CotEditor.TouchBarItem.indentGuides")
     static let wrapLines = NSTouchBarItem.Identifier("com.coteditor.CotEditor.TouchBarItem.wrapLines")
     static let share = NSTouchBarItem.Identifier("com.coteditor.CotEditor.TouchBarItem.share")
 }
@@ -52,8 +53,8 @@ extension DocumentViewController: NSTouchBarDelegate {
         
         touchBar.delegate = self
         touchBar.customizationIdentifier = .documentView
-        touchBar.defaultItemIdentifiers = [.otherItemsProxy, .fixedSpaceSmall, .invisibles, .wrapLines]
-        touchBar.customizationAllowedItemIdentifiers = [.share, .invisibles, .wrapLines]
+        touchBar.defaultItemIdentifiers = [.otherItemsProxy, .fixedSpaceSmall, .invisibles, .wrapLines, .share]
+        touchBar.customizationAllowedItemIdentifiers = [.share, .invisibles, .indentGuides, .wrapLines]
         
         return touchBar
     }
@@ -65,26 +66,32 @@ extension DocumentViewController: NSTouchBarDelegate {
     func touchBar(_ touchBar: NSTouchBar, makeItemForIdentifier identifier: NSTouchBarItem.Identifier) -> NSTouchBarItem? {
         
         switch identifier {
-        case .invisibles:
-            let item = NSCustomTouchBarItem(identifier: identifier)
-            item.customizationLabel = "Invisibles".localized(comment: "touch bar item")
-            item.view = NSButton(image: #imageLiteral(resourceName: "InvisiblesTemplate"), target: self, action: #selector(toggleInvisibleCharsViaTouchBar(_:)))
-            return item
+            case .invisibles:
+                let item = NSCustomTouchBarItem(identifier: identifier)
+                item.customizationLabel = "Invisibles".localized(comment: "touch bar item")
+                item.view = NSButton(image: #imageLiteral(resourceName: "InvisiblesTemplate"), target: self, action: #selector(toggleInvisibleCharsViaTouchBar))
+                return item
             
-        case .wrapLines:
-            let item = NSCustomTouchBarItem(identifier: identifier)
-            item.customizationLabel = "Wrap Lines".localized(comment: "touch bar item")
-            item.view = NSButton(image: #imageLiteral(resourceName: "WrapLinesTemplate"), target: self, action: #selector(toggleLineWrapViaTouchBar(_:)))
-            return item
+            case .indentGuides:
+                let item = NSCustomTouchBarItem(identifier: identifier)
+                item.customizationLabel = "Indent Guides".localized(comment: "touch bar item")
+                item.view = NSButton(image: #imageLiteral(resourceName: "IndentGuidesTemplate"), target: self, action: #selector(toggleIndentGuidesViaTouchBar))
+                return item
             
-        case .share:
-            guard let document = self.document else { return nil }
-            let item = NSSharingServicePickerTouchBarItem(identifier: identifier)
-            item.delegate = document
-            return item
+            case .wrapLines:
+                let item = NSCustomTouchBarItem(identifier: identifier)
+                item.customizationLabel = "Wrap Lines".localized(comment: "touch bar item")
+                item.view = NSButton(image: #imageLiteral(resourceName: "WrapLinesTemplate"), target: self, action: #selector(toggleLineWrapViaTouchBar))
+                return item
             
-        default:
-            return nil
+            case .share:
+                guard let document = self.document else { return nil }
+                let item = NSSharingServicePickerTouchBarItem(identifier: identifier)
+                item.delegate = document
+                return item
+            
+            default:
+                return nil
         }
     }
     
@@ -93,11 +100,15 @@ extension DocumentViewController: NSTouchBarDelegate {
     @IBAction private func toggleInvisibleCharsViaTouchBar(_ sender: NSButton) {
         
         self.toggleInvisibleChars(sender)
+        self.validateUserInterfaceForTouchBarEvent()
+    }
+    
+    
+    /// toggle visibility of invisible characters in text view
+    @IBAction private func toggleIndentGuidesViaTouchBar(_ sender: NSButton) {
         
-        // update UI manually
-        //   -> workaround for the issue where UI doesn't update on a touch bar event (2017-01 macOS 10.12.2 SDK)
-        self.view.window?.toolbar?.validateVisibleItems()
-        self.touchBar?.validateVisibleItems()
+        self.toggleIndentGuides(sender)
+        self.validateUserInterfaceForTouchBarEvent()
     }
     
     
@@ -105,9 +116,18 @@ extension DocumentViewController: NSTouchBarDelegate {
     @IBAction private func toggleLineWrapViaTouchBar(_ sender: NSButton) {
         
         self.toggleLineWrap(sender)
+        self.validateUserInterfaceForTouchBarEvent()
+    }
+    
+    
+    
+    // MARK: Private Methods
+    
+    /// Update UI manually.
+    ///
+    /// Workaround for the issue where UI doesn't update on a touch bar event. (2017-01 macOS 10.12.2 SDK)
+    private func validateUserInterfaceForTouchBarEvent() {
         
-        // update UI manually
-        //   -> workaround for the issue where UI doesn't update on a touch bar event (2017-01 macOS 10.12.2 SDK)
         self.view.window?.toolbar?.validateVisibleItems()
         self.touchBar?.validateVisibleItems()
     }
@@ -124,13 +144,16 @@ extension DocumentViewController: TouchBarItemValidations {
         
         guard let isEnabled: Bool = {
             switch item.identifier {
-            case .invisibles:
-                return self.showsInvisibles
+                case .invisibles:
+                    return self.showsInvisibles
                 
-            case .wrapLines:
-                return self.wrapsLines
+                case .indentGuides:
+                    return self.showsIndentGuides
                 
-            default: return nil
+                case .wrapLines:
+                    return self.wrapsLines
+                
+                default: return nil
             }
             }() else { return true }
         

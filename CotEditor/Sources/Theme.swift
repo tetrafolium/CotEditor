@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -33,23 +33,159 @@ protocol Themable: AnyObject {
 }
 
 
-struct Theme: Equatable, Codable {
+
+final class Theme: NSObject {
     
-    struct Style: Equatable {
+    final class Style: NSObject {
         
-        var color: NSColor
+        @objc dynamic var color: NSColor
+        
+        fileprivate static let invalidColor = NSColor.gray.usingColorSpace(.genericRGB)!
+        
+        
+        init(color: NSColor) {
+            
+            self.color = color
+        }
     }
     
     
-    struct SelectionStyle: Equatable {
+    final class SelectionStyle: NSObject {
         
-        var color: NSColor
-        var usesSystemSetting: Bool
+        @objc dynamic var color: NSColor
+        @objc dynamic var usesSystemSetting: Bool
+        
+        
+        init(color: NSColor, usesSystemSetting: Bool = false) {
+            
+            self.color = color
+            self.usesSystemSetting = usesSystemSetting
+        }
     }
     
     
     
-    enum CodingKeys: String, CodingKey {
+    // MARK: Public Properties
+    
+    /// name of the theme
+    var name: String?
+    
+    // basic colors
+    @objc dynamic var text: Style
+    @objc dynamic var background: Style
+    @objc dynamic var invisibles: Style
+    @objc dynamic var selection: SelectionStyle
+    @objc dynamic var insertionPoint: Style
+    @objc dynamic var lineHighlight: Style
+    
+    @objc dynamic var keywords: Style
+    @objc dynamic var commands: Style
+    @objc dynamic var types: Style
+    @objc dynamic var attributes: Style
+    @objc dynamic var variables: Style
+    @objc dynamic var values: Style
+    @objc dynamic var numbers: Style
+    @objc dynamic var strings: Style
+    @objc dynamic var characters: Style
+    @objc dynamic var comments: Style
+    
+    var metadata: Metadata?
+    
+    
+    
+    // MARK: -
+    // MARK: Lifecycle
+    
+    init(name: String? = nil) {
+        
+        self.name = name
+        
+        self.text = Style(color: .textColor)
+        self.background = Style(color: .textBackgroundColor)
+        self.invisibles = Style(color: .tertiaryLabelColor)
+        self.selection = SelectionStyle(color: .selectedTextBackgroundColor, usesSystemSetting: true)
+        self.insertionPoint = Style(color: .textColor)
+        self.lineHighlight = Style(color: .quaternaryLabelColor)
+        
+        self.keywords = Style(color: .gray)
+        self.commands = Style(color: .gray)
+        self.types = Style(color: .gray)
+        self.attributes = Style(color: .gray)
+        self.variables = Style(color: .gray)
+        self.values = Style(color: .gray)
+        self.numbers = Style(color: .gray)
+        self.strings = Style(color: .gray)
+        self.characters = Style(color: .gray)
+        self.comments = Style(color: .gray)
+    }
+    
+    
+    static func theme(contentsOf fileURL: URL) throws -> Theme {
+        
+        let data = try Data(contentsOf: fileURL)
+        let decoder = JSONDecoder()
+        
+        let theme = try decoder.decode(Theme.self, from: data)
+        theme.name = fileURL.deletingPathExtension().lastPathComponent
+        
+        return theme
+    }
+    
+    
+    
+    // MARK: Public Methods
+    
+    /// Is background color dark?
+    var isDarkTheme: Bool {
+        
+        guard
+            let textColor = self.text.color.usingColorSpace(.genericRGB),
+            let backgroundColor = self.background.color.usingColorSpace(.genericRGB)
+            else { return false }
+        
+        return backgroundColor.lightnessComponent < textColor.lightnessComponent
+    }
+    
+    
+    /// selection color for inactive text view
+    var secondarySelectionColor: NSColor? {
+        
+        guard
+            !self.selection.usesSystemSetting,
+            let color = self.selection.color.usingColorSpace(.genericRGB)
+            else { return nil }
+        
+        return NSColor(calibratedWhite: color.lightnessComponent, alpha: 1.0)
+    }
+    
+    
+    /// color for syntax type defined in theme
+    func style(for type: SyntaxType) -> Style? {
+        
+        // The syntax keys and theme keys must be the same.
+        switch type {
+            case .keywords: return self.keywords
+            case .commands: return self.commands
+            case .types: return self.types
+            case .attributes: return self.attributes
+            case .variables: return self.variables
+            case .values: return self.values
+            case .numbers: return self.numbers
+            case .strings: return self.strings
+            case .characters: return self.characters
+            case .comments: return self.comments
+        }
+    }
+    
+}
+
+
+
+// MARK: - Codable
+
+extension Theme: Codable {
+    
+    private enum CodingKeys: String, CodingKey {
         
         case text
         case background
@@ -72,94 +208,11 @@ struct Theme: Equatable, Codable {
         case metadata
     }
     
-    
-    
-    // MARK: Public Properties
-    
-    /// name of the theme
-    var name: String?
-    
-    // basic colors
-    var text: Style
-    var background: Style
-    var invisibles: Style
-    var selection: SelectionStyle
-    var insertionPoint: Style
-    var lineHighlight: Style
-    
-    var keywords: Style
-    var commands: Style
-    var types: Style
-    var attributes: Style
-    var variables: Style
-    var values: Style
-    var numbers: Style
-    var strings: Style
-    var characters: Style
-    var comments: Style
-    
-    var metadata: Metadata?
-    
-    
-    
-    // MARK: -
-    // MARK: Lifecycle
-    
-    init(contentsOf fileURL: URL) throws {
-        
-        let data = try Data(contentsOf: fileURL)
-        let decoder = JSONDecoder()
-        
-        self = try decoder.decode(Theme.self, from: data)
-        
-        self.name = fileURL.deletingPathExtension().lastPathComponent
-    }
-    
-    
-    
-    // MARK: Public Methods
-    
-    /// Is background color dark?
-    var isDarkTheme: Bool {
-        
-        return self.background.color.lightnessComponent < self.text.color.lightnessComponent
-    }
-    
-    
-    /// selection color for inactive text view
-    var secondarySelectionColor: NSColor? {
-        
-        return self.selection.usesSystemSetting ? nil : NSColor(calibratedWhite: self.selection.color.lightnessComponent, alpha: 1.0)
-    }
-    
-    
-    /// color for syntax type defined in theme
-    func style(for type: SyntaxType) -> Style? {
-        
-        // The syntax key and theme keys must be the same.
-        switch type {
-        case .keywords: return self.keywords
-        case .commands: return self.commands
-        case .types: return self.types
-        case .attributes: return self.attributes
-        case .variables: return self.variables
-        case .values: return self.values
-        case .numbers: return self.numbers
-        case .strings: return self.strings
-        case .characters: return self.characters
-        case .comments: return self.comments
-        }
-    }
-    
 }
 
 
 
-// MARK: - Codable
-
 extension Theme.Style: Codable {
-    
-    fileprivate static let invalidColor = NSColor.gray.usingColorSpaceName(.calibratedRGB)!
     
     private enum CodingKeys: String, CodingKey {
         
@@ -167,20 +220,24 @@ extension Theme.Style: Codable {
     }
     
     
-    init(from decoder: Decoder) throws {
+    convenience init(from decoder: Decoder) throws {
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         let colorCode = try container.decode(String.self, forKey: .color)
-        self.color = NSColor(colorCode: colorCode) ?? Theme.Style.invalidColor
+        let color = NSColor(colorCode: colorCode) ?? Theme.Style.invalidColor
+        
+        self.init(color: color)
     }
     
     
     func encode(to encoder: Encoder) throws {
         
+        guard let color = self.color.usingColorSpace(.genericRGB) else { throw CocoaError(.coderInvalidValue) }
+        
         var container = encoder.container(keyedBy: CodingKeys.self)
         
-        try container.encode(self.color.colorCode(type: .hex), forKey: .color)
+        try container.encode(color.colorCode(type: .hex), forKey: .color)
     }
     
 }
@@ -189,30 +246,34 @@ extension Theme.Style: Codable {
 
 extension Theme.SelectionStyle: Codable {
     
-    enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey {
         
         case color
         case usesSystemSetting
     }
     
     
-    init(from decoder: Decoder) throws {
+    convenience init(from decoder: Decoder) throws {
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         let colorCode = try container.decode(String.self, forKey: .color)
-        self.color = NSColor(colorCode: colorCode) ?? Theme.Style.invalidColor
+        let color = NSColor(colorCode: colorCode) ?? Theme.Style.invalidColor
         
-        self.usesSystemSetting = try container.decodeIfPresent(Bool.self, forKey: .usesSystemSetting) ?? false
+        let usesSystemSetting = try container.decodeIfPresent(Bool.self, forKey: .usesSystemSetting) ?? false
+        
+        self.init(color: color, usesSystemSetting: usesSystemSetting)
     }
     
     
     func encode(to encoder: Encoder) throws {
         
+        guard let color = self.color.usingColorSpace(.genericRGB) else { throw CocoaError(.coderInvalidValue) }
+        
         var container = encoder.container(keyedBy: CodingKeys.self)
         
-        try container.encode(self.color.colorCode(type: .hex), forKey: .color)
-        try container.encode(true, forKey: .usesSystemSetting)
+        try container.encode(color.colorCode(type: .hex), forKey: .color)
+        try container.encode(self.usesSystemSetting, forKey: .usesSystemSetting)
     }
     
 }

@@ -28,35 +28,34 @@ import Cocoa
 extension NSTextView {
     
     /// character just before the given range
-    func character(before range: NSRange) -> UnicodeScalar? {
+    func character(before range: NSRange) -> Unicode.Scalar? {
         
         guard range.lowerBound > 0 else { return nil }
         
-        guard let index = String.UTF16Index(encodedOffset: range.lowerBound - 1).samePosition(in: self.string.unicodeScalars) else { return nil }
+        let index = String.UnicodeScalarIndex(utf16Offset: range.lowerBound - 1, in: self.string)
         
         return self.string.unicodeScalars[safe: index]
     }
     
     
     /// character just after the given range
-    func character(after range: NSRange) -> UnicodeScalar? {
+    func character(after range: NSRange) -> Unicode.Scalar? {
         
-        guard let index = String.UTF16Index(encodedOffset: range.upperBound).samePosition(in: self.string.unicodeScalars) else { return nil }
+        let index = String.UnicodeScalarIndex(utf16Offset: range.upperBound, in: self.string)
         
         return self.string.unicodeScalars[safe: index]
     }
     
     
     /// location of the beginning of the current visual line considering indent
-    func locationOfBeginningOfLine(for range: NSRange) -> Int {
+    func locationOfBeginningOfLine(for location: Int) -> Int {
         
         let string = self.string as NSString
-        let currentLocation = range.location
-        let lineRange = string.lineRange(for: range)
+        let lineRange = string.lineRange(at: location)
         
-        if let layoutManager = self.layoutManager, currentLocation > 0 {
+        if let layoutManager = self.layoutManager, location > 0 {
             // beginning of current visual line
-            let visualLineLocation = layoutManager.lineFragmentRange(at: currentLocation - 1).location
+            let visualLineLocation = layoutManager.lineFragmentRange(at: location - 1).location
             
             if lineRange.location < visualLineLocation {
                 return visualLineLocation
@@ -66,7 +65,7 @@ extension NSTextView {
         // column just after indent of paragraph line
         let indentLocation = string.range(of: "^[\t ]*", options: .regularExpression, range: lineRange).upperBound
         
-        return (indentLocation < currentLocation) ? indentLocation : lineRange.location
+        return (indentLocation < location) ? indentLocation : lineRange.location
     }
     
 }

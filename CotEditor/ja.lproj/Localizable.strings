@@ -10,7 +10,7 @@
  ------------------------------------------------------------------------------
  
  © 2004-2007 nakamuxu
- © 2014-2018 1024jp
+ © 2014-2020 1024jp
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -54,11 +54,6 @@
 "What’s New in CotEditor %@" = "CotEditor %@の新機能";  // %@ is version number
 
 
-// Share menu
-"Share" = "共有";
-"No Document" = "書類なし";
-
-
 
 /* MARK: AppDelegate */
 // Format - Syntax coloring menu item title
@@ -72,8 +67,8 @@
 "Open as Text File" = "テキストファイルとして開く";
 "A new theme named “%@” has been successfully installed." = "新しいテーマ“%@”がインストールされました。";
 
-// Window title of bug report
-"Bug Report" = "不具合レポート";
+// Window title of issue report
+"Issue Report" = "不具合レポート";
 
 
 
@@ -89,7 +84,12 @@
 "%@ strings replaced." = "%@件置換しました。";
 "Invalid regular expression" = "無効な正規表現です。";
 "Empty find string" = "検索文字列が空です。";
+"The option “in selection” is enabled, although nothing is selected." = "「選択範囲のみ」オプションが有効になっていますが、何も選択されていません。";
 "Input text to find." = "検索するテキストを入力してください。";
+"Select the search scope in document or disable “in selection” option." = "検索範囲を選択するか「選択範囲のみ」オプションを無効にしてください。";
+
+// accessibility announcement
+"Search wrapped." = "検索が折り返されました。";  // announced when the search restarted from the beginning.
 
 
 /* MARK: FindPanelController */
@@ -120,11 +120,11 @@
 
 /* MARK: Document Controller */
 // File open accessory's menu item title
-"Auto-Detect" = "自動認識";
+"Automatic" = "自動";
 
 // Binary file alert
 "The file “%@” doesn’t appear to be text data." = "ファイル“%@”はテキストデータではないようです。";
-"The file is %@.\n\nDo you really want to open the file?" = "このファイルは%@です。\n\n本当にファイルを開きますか?";
+"The file appears to be %@.\n\nDo you really want to open the file?" = "このファイルは%@のようです。\n\n本当にファイルを開きますか?";
 
 // Large file alert
 "The file “%@” has a size of %@." = "ファイル“%@”はファイルサイズが%@あります。";
@@ -177,6 +177,7 @@
 /* MARK: Touch Bar */
 // Touch bar item labels -Document View
 "Invisibles" = "不可視文字";
+"Indent Guides" = "インデントガイド";
 "Wrap Lines" = "行を折り返す";
 
 // Touch bar item labels -Text View
@@ -197,7 +198,7 @@
 // Summary item names
 "Color" = "カラー";
 "Line Number" = "行番号";
-"Invisible Characters" = "不可視文字";
+"Invisibles" = "不可視文字";
 "Print Header" = "ヘッダをプリント";
 "Primary Header" = "主ヘッダ";
 "Primary Header Alignment" = "主ヘッダの位置";
@@ -216,7 +217,6 @@
 "Same as Document’s Setting" = "書類の設定と同じ";
 "Black and White" = "白黒";
 "Print" = "プリント";
-"Print All" = "すべてプリント";
 "Syntax Name" = "シンタックス名";
 "Document Name" = "書類名";
 "File Path" = "ファイルパス";
@@ -268,6 +268,7 @@
 "Text" = "テキスト";
 "Copy as Rich Text" = "リッチテキストとしてコピー";
 "Select All" = "すべてを選択";
+"Straighten Quotes" = "引用符をまっすぐにする";
 
 
 
@@ -281,14 +282,16 @@
 "Show Status Bar" = "ステータスバーを表示";
 "Hide Navigation Bar" = "ナビゲーションバーを非表示";
 "Show Navigation Bar" = "ナビゲーションバーを表示";
-"Hide Invisible Characters" = "不可視文字を非表示";
-"Show Invisible Characters" = "不可視文字を表示";
+"Hide Invisibles" = "不可視文字を非表示";
+"Show Invisibles" = "不可視文字を表示";
 "Hide Page Guide" = "ページガイドを非表示";
 "Show Page Guide" = "ページガイドを表示";
+"Hide Indent Guides" = "インデントガイドを非表示";
+"Show Indent Guides" = "インデントガイドを表示";
 "Unwrap Lines" = "行を折り返さない";
 "Wrap Lines" = "行を折り返す";
 
-// Tooltip for "Show Invisible Characters" menu item
+// Tooltip for "Show Invisibles" menu item
 "Show or hide invisible characters in document" = "書類中の不可視文字を表示/非表示";
 "To show invisible characters, set them in Preferences" = "不可視文字を表示させるには、環境設定を変更してください";
 
@@ -325,6 +328,7 @@
 "Coloring text…" = "テキストのカラーリング中...";
 "Please wait for a while." = "しばらくお待ちください...";
 "Extracting %@…" = "%@を抽出中...";
+"Preparing coloring…" = "カラーリングの準備中...";
 "Applying colors to text" = "テキストにカラーを適用中";
 "keywords" = "キーワード";
 "commands" = "コマンド";
@@ -349,7 +353,7 @@
 
 // General pane
 // Autosave setting update alert
-"The change will be applied first at the next launch." = "この変更は次回アプリケーション起動時に適用されます。";
+"The change will be applied first on the next launch." = "この変更は次回アプリケーション起動時に適用されます。";
 "Do you want to restart CotEditor now?" = "CotEditorを今すぐ再起動しますか?";
 "Restart Now" = "今すぐ再起動";
 "Later" = "あとで";
@@ -371,12 +375,6 @@
 
 
 // Format pane
-// Encoding menu alert
-"Are you sure you want to change to “%@”?" = "本当に“%@”へ変更しますか?";
-"The default “Auto-Detect” is recommended for most cases." = "ほとんどの場合、デフォルトの“自動認識”が推奨されます。";
-"Change to “%@”" = "“%@”へ変更";
-"Revert to “Auto-Detect”" = "“自動認識”へ戻す";
-
 // Installed syntax styles action menu items
 "Duplicate “%@”…" = "“%@”を複製...";
 "Export “%@”…" = "“%@”を書き出し...";
@@ -506,7 +504,7 @@
 "“%@” includes the Command key." = "“%@”はコマンドキーを含んでいます。";
 "Please choose another key." = "別のキーを選んでください。";
 "Single type is invalid for a shortcut." = "単体のキーはショートカットに登録できません。";
-"Please combine with another keys." = "別のキーと組み合わせてください。";
+"Please combine with other keys." = "別のキーと組み合わせてください。";
 
 
 
@@ -533,14 +531,14 @@
 
 // Script file error recovery suggestions
 "Check the script file." = "スクリプトファイルを確認してください。";
-"Check permission of the script file." = "スクリプトファイルのアクセス権を確認してください。";
+"Check the permission of the script file." = "スクリプトファイルのアクセス権を確認してください。";
 
 
 
 /* MARK: FileDropComposer */
 // Descriptions about variables in the file drop feature
 "The dropped file absolute path." = "ドロップ元ファイルの絶対パス";
-"The relative path between dropped file and the document." = "ドロップ先ファイルからドロップ元ファイルへの相対パス";
+"The relative path between the dropped file and the document." = "ドロップ先ファイルからドロップ元ファイルへの相対パス";
 "The dropped file’s name including extension (if exists)." = "ドロップ元ファイルの拡張子を含むファイル名";
 "The dropped file’s name without extension." = "ドロップ元ファイルの名前から拡張子を削除した文字列";
 "The dropped file’s extension." = "ドロップ元ファイルの拡張子";
@@ -549,6 +547,7 @@
 "The parent directory name of dropped file." = "ドロップ元ファイルのあるディレクトリ名";
 "(If the dropped file is an image) image width." = "イメージの幅（ドロップ元ファイルが画像ファイルのときのみ有効）";
 "(If the dropped file is an image) image height." = "イメージの高さ（ドロップ元ファイルが画像ファイルのときのみ有効）";
+"(If the dropped file is a text file) file content." = "ファイル内容（ドロップ元ファイルがテキストファイルのときのみ有効）";
 
 
 

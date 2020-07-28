@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2015-2018 1024jp
+//  © 2015-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -32,12 +32,10 @@ enum IndentStyle {
 }
 
 
-private struct DetectionLines {
+private enum DetectionLines {
     
     static let min = 5
     static let max = 100
-    
-    private init() { }
 }
 
 
@@ -66,12 +64,12 @@ extension String {
             
             // check first character
             switch character {
-            case "\t":
-                tabCount += 1
-            case " ":
-                spaceCount += 1
-            default:
-                break
+                case "\t":
+                    tabCount += 1
+                case " ":
+                    spaceCount += 1
+                default:
+                    break
             }
         }
         
@@ -97,10 +95,10 @@ extension String {
         
         let indent: (before: String, after: String) = {
             switch indentStyle {
-            case .space:
-                return (before: "\t", after: spaces)
-            case .tab:
-                return (before: spaces, after: "\t")
+                case .space:
+                    return (before: "\t", after: spaces)
+                case .tab:
+                    return (before: spaces, after: "\t")
             }
         }()
         
@@ -120,27 +118,9 @@ extension String {
         guard !indentRange.isEmpty else { return 0 }
         
         let indent = self[indentRange]
-        let numberOfTabs = indent.components(separatedBy: "\t").count - 1
+        let numberOfTabs = indent.count { $0 == "\t" }
         
         return numberOfTabs + ((indent.count - numberOfTabs) / tabWidth)
-    }
-    
-    
-    /// calculate column number at location in the line expanding tab (\t) character
-    func column(of location: Int, tabWidth: Int) -> Int {
-        
-        assert(tabWidth > 0)
-        
-        let index = String.UTF16Index(encodedOffset: location).samePosition(in: self)!
-        
-        let lineRange = self.lineRange(at: index)
-        let column = self.distance(from: lineRange.lowerBound, to: index)
-        
-        // count tab width
-        let beforeInsertion = self[lineRange.lowerBound..<index]
-        let numberOfTabs = beforeInsertion.components(separatedBy: "\t").count - 1
-        
-        return column + numberOfTabs * (tabWidth - 1)
     }
     
     
@@ -148,7 +128,6 @@ extension String {
     func rangeOfIndent(at location: Int) -> NSRange {
         
         let lineRange = (self as NSString).lineRange(at: location)
-        
         let range = (self as NSString).range(of: "^[ \\t]+", options: .regularExpression, range: lineRange)
         
         guard range.location != NSNotFound else {
@@ -164,15 +143,11 @@ extension String {
         
         let lineRange = self.lineRange(at: index)
         
-        guard let indentRange = self.range(of: "^[ \\t]+", options: .regularExpression, range: lineRange) else {
-            return index..<index
-        }
-        
-        return indentRange
+        return self.range(of: "^[ \\t]+", options: .regularExpression, range: lineRange) ?? index..<index
     }
     
     
-    /// Range for deleting soft-tab or nil if the character to delete is not speace.
+    /// Range for deleting soft-tab or nil if the character to delete is not a space.
     ///
     /// - Parameters:
     ///   - range: The range of selection.
@@ -183,19 +158,20 @@ extension String {
         assert(tabWidth > 0)
         assert(range.location != NSNotFound)
         
-        guard
-            range.length == 0,
-            self.rangeOfIndent(at: range.location).upperBound >= range.location
-            else { return nil }
+        guard range.isEmpty else { return nil }
+        
+        let lineStartIndex = (self as NSString).lineStartIndex(at: range.location)
+        let forwardRange = NSRange(lineStartIndex..<range.location)
+        
+        guard (self as NSString).range(of: "^ +$", options: .regularExpression, range: forwardRange).length > 1 else { return nil }
         
         let column = self.column(of: range.location, tabWidth: tabWidth)
         let targetLength = tabWidth - (column % tabWidth)
-        let targetRange = NSRange((range.location - targetLength)..<range.location)
+        let targetRange = NSRange(location: range.location - targetLength, length: targetLength)
         
         guard
             range.location >= targetLength,
-            let range = Range(targetRange, in: self),
-            self[range].allSatisfy({ $0 == " " })
+            (self as NSString).substring(with: targetRange).allSatisfy({ $0 == " " })
             else { return nil }
         
         return targetRange
@@ -217,6 +193,23 @@ extension String {
         let length = tabWidth - (column % tabWidth)
         
         return String(repeating: " ", count: length)
+    }
+    
+    
+    
+    // MARK: Private Methods
+    
+    /// calculate column number at location in the line expanding tab (\t) character
+    private func column(of location: Int, tabWidth: Int) -> Int {
+        
+        assert(tabWidth > 0)
+        
+        let index = String.Index(utf16Offset: location, in: self)
+        let lineStartIndex = self.lineStartIndex(at: index)
+        
+        return self[lineStartIndex..<index].lazy
+            .map { $0 == "\t" ? tabWidth : $0.utf16.count }
+            .reduce(0, +)
     }
     
 }

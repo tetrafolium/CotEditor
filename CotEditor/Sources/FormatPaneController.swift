@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -38,11 +38,10 @@ private let isUTF8WithBOMFlag = "UTF-8 with BOM"
 
 
 final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTableViewDelegate, NSTableViewDataSource {
-
+    
     // MARK: Private Properties
     
-    @IBOutlet private weak var inOpenEncodingMenu: NSPopUpButton?
-    @IBOutlet private weak var inNewEncodingMenu: NSPopUpButton?
+    @IBOutlet private weak var encodingPopupButton: NSPopUpButton?
     
     @IBOutlet private var stylesController: NSArrayController?
     @IBOutlet private var syntaxTableMenu: NSMenu?
@@ -62,13 +61,7 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
         
         self.syntaxTableView?.doubleAction = #selector(editSyntaxStyle)
         self.syntaxTableView?.target = self
-        
-        let draggedType = NSPasteboard.PasteboardType(kUTTypeURL as String)
-        self.syntaxTableView?.registerForDraggedTypes([draggedType])
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(setupEncodingMenus), name: didUpdateSettingListNotification, object: EncodingManager.shared)
-        NotificationCenter.default.addObserver(self, selector: #selector(setupSyntaxStyleMenus), name: didUpdateSettingListNotification, object: SyntaxManager.shared)
-        NotificationCenter.default.addObserver(self, selector: #selector(setupSyntaxStyleMenus), name: didUpdateSettingNotification, object: SyntaxManager.shared)
+        self.syntaxTableView?.registerForDraggedTypes([.URL])
     }
     
     
@@ -77,8 +70,22 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
         
         super.viewWillAppear()
         
-        self.setupEncodingMenus()
+        self.setupEncodingMenu()
         self.setupSyntaxStyleMenus()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(setupEncodingMenu), name: didUpdateSettingListNotification, object: EncodingManager.shared)
+        NotificationCenter.default.addObserver(self, selector: #selector(setupSyntaxStyleMenus), name: didUpdateSettingListNotification, object: SyntaxManager.shared)
+        NotificationCenter.default.addObserver(self, selector: #selector(setupSyntaxStyleMenus), name: didUpdateSettingNotification, object: SyntaxManager.shared)
+    }
+    
+    
+    /// stop observations for UI update
+    override func viewDidDisappear() {
+        
+        super.viewDidDisappear()
+        
+        NotificationCenter.default.removeObserver(self, name: didUpdateSettingListNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: didUpdateSettingNotification, object: nil)
     }
     
     
@@ -117,48 +124,50 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
             (isBundled, isCustomized) = (false, false)
         }
         
-        guard let action = menuItem.action else { return false }
-        
         // append target setting name to menu titles
-        switch action {
-        case #selector(openSyntaxMappingConflictSheet(_:)):
-            return SyntaxManager.shared.mappingConflicts.contains { !$0.value.isEmpty }
+        switch menuItem.action {
+            case #selector(openSyntaxMappingConflictSheet(_:)):
+                return SyntaxManager.shared.mappingConflicts.contains { !$0.value.isEmpty }
             
-        case #selector(duplicateSyntaxStyle(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Duplicate “%@”".localized, name)
-            }
-            menuItem.isHidden = !itemSelected
+            case #selector(duplicateSyntaxStyle(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Duplicate “%@”".localized, name)
+                }
+                menuItem.isHidden = !itemSelected
             
-        case #selector(deleteSyntaxStyle(_:)):
-            menuItem.isHidden = (isBundled || !itemSelected)
+            case #selector(deleteSyntaxStyle(_:)):
+                menuItem.isHidden = (isBundled || !itemSelected)
             
-        case #selector(restoreSyntaxStyle(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Restore “%@”".localized, name)
-            }
-            menuItem.isHidden = (!isBundled || !itemSelected)
-            return isCustomized
+            case #selector(restoreSyntaxStyle(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Restore “%@”".localized, name)
+                }
+                menuItem.isHidden = (!isBundled || !itemSelected)
+                return isCustomized
             
-        case #selector(exportSyntaxStyle(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Export “%@”…".localized, name)
-            }
-            menuItem.isHidden = !itemSelected
-            return (!isBundled || isCustomized)
+            case #selector(exportSyntaxStyle(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Export “%@”…".localized, name)
+                }
+                menuItem.isHidden = !itemSelected
+                return (!isBundled || isCustomized)
             
-        case #selector(revealSyntaxStyleInFinder(_:)):
-            if let name = representedSettingName, !isContextualMenu {
-                menuItem.title = String(format: "Reveal “%@” in Finder".localized, name)
-            }
-            return (!isBundled || isCustomized)
+            case #selector(revealSyntaxStyleInFinder(_:)):
+                if let name = representedSettingName, !isContextualMenu {
+                    menuItem.title = String(format: "Reveal “%@” in Finder".localized, name)
+                }
+                return (!isBundled || isCustomized)
             
-        default: break
+            case nil:
+                return false
+            
+            default:
+                break
         }
         
         return true
     }
-        
+    
     
     
     // MARK: Delegate & Data Source
@@ -257,30 +266,11 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
     // MARK: Action Messages
     
     /// save also availability of UTF-8 BOM
-    @IBAction func changeEncodingInNewDocument(_ sender: Any?) {
+    @IBAction func changeEncoding(_ sender: Any?) {
         
-        let withUTF8BOM = (self.inNewEncodingMenu?.selectedItem?.representedObject as? String) == isUTF8WithBOMFlag
+        let withUTF8BOM = (self.encodingPopupButton?.selectedItem?.representedObject as? String) == isUTF8WithBOMFlag
         
         UserDefaults.standard[.saveUTF8BOM] = withUTF8BOM
-    }
-    
-    
-    /// recommend user to use "Auto-Detect" on changing encoding setting
-    @IBAction func checkSelectedItemOfInOpenEncodingMenu(_ sender: Any?) {
-        
-        guard let newTitle = self.inOpenEncodingMenu?.selectedItem?.title, newTitle != "Auto-Detect".localized else { return }
-        
-        let alert = NSAlert()
-        alert.messageText = String(format: "Are you sure you want to change to “%@”?".localized, newTitle)
-        alert.informativeText = "The default “Auto-Detect” is recommended for most cases.".localized
-        alert.addButton(withTitle: "Revert to “Auto-Detect”".localized)
-        alert.addButton(withTitle: String(format: "Change to “%@”".localized, newTitle))
-        
-        alert.beginSheetModal(for: self.view.window!) { (returnCode: NSApplication.ModalResponse) in
-            guard returnCode == .alertFirstButtonReturn else { return }
-            
-            UserDefaults.standard[.encodingInOpen] = String.Encoding.autoDetection.rawValue
-        }
     }
     
     
@@ -354,7 +344,7 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
         savePanel.nameFieldStringValue = settingName
         savePanel.allowedFileTypes = [SyntaxManager.shared.filePathExtension]
         
-        savePanel.beginSheetModal(for: self.view.window!) { (result: NSApplication.ModalResponse) in
+        savePanel.beginSheetModal(for: self.view.window!) { [unowned self] (result: NSApplication.ModalResponse) in
             guard result == .OK else { return }
             
             do {
@@ -374,7 +364,7 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
         openPanel.resolvesAliases = true
         openPanel.allowsMultipleSelection = true
         openPanel.canChooseDirectories = false
-        openPanel.allowedFileTypes = [SyntaxManager.shared.filePathExtension, "plist"]
+        openPanel.allowedFileTypes = SyntaxManager.shared.filePathExtensions + ["plist"]
         
         openPanel.beginSheetModal(for: self.view.window!) { [unowned self] (result: NSApplication.ModalResponse) in
             guard result == .OK else { return }
@@ -406,52 +396,39 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
     
     // MARK: Private Methods
     
-    /// build encodings menus
-    @objc private func setupEncodingMenus() {
+    /// build encoding menu
+    @objc private func setupEncodingMenu() {
         
-        guard
-            let inOpenMenu = self.inOpenEncodingMenu?.menu,
-            let inNewMenu = self.inNewEncodingMenu?.menu
-            else { return assertionFailure() }
+        guard let popupButton = self.encodingPopupButton else { return assertionFailure() }
+        assert(popupButton.menu != nil)
         
-        let menuItems = EncodingManager.shared.createEncodingMenuItems()
-        
-        inOpenMenu.removeAllItems()
-        inNewMenu.removeAllItems()
-        
-        let autoDetectItem = NSMenuItem(title: "Auto-Detect".localized, action: nil, keyEquivalent: "")
-        autoDetectItem.tag = Int(String.Encoding.autoDetection.rawValue)
-        inOpenMenu.addItem(autoDetectItem)
-        inOpenMenu.addItem(.separator())
+        popupButton.removeAllItems()
         
         let utf8Int = Int(String.Encoding.utf8.rawValue)
-        for item in menuItems {
-            inOpenMenu.addItem(item)
-            inNewMenu.addItem(item.copy() as! NSMenuItem)
+        for item in EncodingManager.shared.createEncodingMenuItems() {
+            popupButton.menu?.addItem(item)
             
-            // add "UTF-8 with BOM" item only to "In New" menu
+            // add "UTF-8 with BOM" item
             if item.tag == utf8Int {
-                let bomItem = NSMenuItem(title: String.localizedNameOfUTF8EncodingWithBOM, action: nil, keyEquivalent: "")
+                let bomItem = NSMenuItem()
+                bomItem.title = String.localizedName(of: .utf8, withUTF8BOM: true)
                 bomItem.tag = utf8Int
                 bomItem.representedObject = isUTF8WithBOMFlag
-                inNewMenu.addItem(bomItem)
+                popupButton.menu?.addItem(bomItem)
             }
         }
         
-        // select menu item for the current setting manually although Cocoa-Bindings are used on these menus
-        //   -> Because items were actually added after Cocoa-Binding selected the item.
-        let inOpenEncoding = UserDefaults.standard[.encodingInOpen]
-        let inNewEncoding = UserDefaults.standard[.encodingInNew]
-        self.inOpenEncodingMenu?.selectItem(withTag: Int(inOpenEncoding))
-        
-        if Int(inNewEncoding) == utf8Int {
-            let UTF8WithBomIndex = inNewMenu.indexOfItem(withRepresentedObject: isUTF8WithBOMFlag)
-            let index = UserDefaults.standard[.saveUTF8BOM] ? UTF8WithBomIndex : UTF8WithBomIndex - 1
-            // -> The normal "UTF-8" is just above "UTF-8 with BOM".
+        // select menu item for the current setting manually although Cocoa-Bindings is used
+        // -> Because items were actually added after Cocoa-Binding selected the item.
+        let defaultEncoding = UserDefaults.standard[.encodingInNew]
+        if Int(defaultEncoding) == utf8Int {
+            let utf8WithBomIndex = popupButton.indexOfItem(withRepresentedObject: isUTF8WithBOMFlag)
+            let index = UserDefaults.standard[.saveUTF8BOM] ? utf8WithBomIndex : utf8WithBomIndex - 1
+            // -> The normal "UTF-8" locates just above "UTF-8 with BOM".
             
-            self.inNewEncodingMenu?.selectItem(at: index)
+            popupButton.selectItem(at: index)
         } else {
-            self.inNewEncodingMenu?.selectItem(withTag: Int(inNewEncoding))
+            popupButton.selectItem(withTag: Int(defaultEncoding))
         }
     }
     
@@ -482,7 +459,7 @@ final class FormatPaneController: NSViewController, NSMenuItemValidation, NSTabl
             popup.addItems(withTitles: styleNames)
             
             // select menu item for the current setting manually although Cocoa-Bindings are used on this menu
-            //   -> Because items were actually added after Cocoa-Binding selected the item.
+            // -> Because items were actually added after Cocoa-Binding selected the item.
             let defaultStyle = UserDefaults.standard[.syntaxStyle]!
             let selectedStyle = styleNames.contains(defaultStyle) ? defaultStyle : BundledStyleName.none
             

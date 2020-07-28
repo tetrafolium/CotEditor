@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -28,31 +28,20 @@ import ColorCode
 
 protocol ThemeViewControllerDelegate: AnyObject {
     
-    func didUpdate(theme: ThemeManager.ThemeDictionary)
+    func didUpdate(theme: Theme)
 }
 
-
-
-// MARK: -
 
 final class ThemeViewController: NSViewController {
     
     // MARK: Public Properties
     
-    @objc dynamic var theme: ThemeManager.ThemeDictionary? {
-        
-        willSet {
-            // remove current observing (in case when the theme is restored)
-            self.endThemeObserving()
-        }
+    @objc dynamic var theme: Theme? {
         
         didSet {
-            // observe input theme
-            self.beginThemeObserving()
-            
-            // add metadata's NSMutableDictionary beforehand for KVO by NSObjectController
-            if self.theme?[DictionaryKey.metadata.rawValue] == nil {
-                self.theme?[DictionaryKey.metadata.rawValue] = NSMutableDictionary()
+            // add metadata beforehand for KVO by NSObjectController
+            if theme?.metadata == nil {
+                theme?.metadata = Metadata()
             }
         }
     }
@@ -64,18 +53,13 @@ final class ThemeViewController: NSViewController {
     
     // MARK: Private Properties
     
-    private var storedMetadata: NSDictionary?
-    private var observedKeys: Set<String> = []
+    private var storedMetadata: Metadata?
+    private var themeObserver: NotificationObservation?
     
     
     
     // MARK: -
     // MARK: Lifecycle
-    
-    deinit {
-        self.endThemeObserving()
-    }
-    
     
     override func viewDidLoad() {
         
@@ -87,22 +71,19 @@ final class ThemeViewController: NSViewController {
     }
     
     
-    override func viewDidAppear() {
+    
+    // MARK: View Controller Methods
+    
+    override func viewWillAppear() {
         
-        super.viewDidAppear()
+        super.viewWillAppear()
         
-        // workaround for macOS 10.12 where NSColorWell do not update while the view is hidden
-        // (2019-01 macOS 10.14)
-        if NSAppKitVersion.current < .macOS10_13 {
-            let theme = self.theme
-            self.theme = nil
-            self.theme = theme
+        self.themeObserver?.invalidate()
+        self.themeObserver = NotificationCenter.default.addObserver(forName: Theme.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.notifyUpdate()
         }
     }
     
-    
-    
-    // MARK: View Controller Methods
     
     /// finish current editing
     override func viewWillDisappear() {
@@ -110,6 +91,9 @@ final class ThemeViewController: NSViewController {
         super.viewWillDisappear()
         
         self.endEditing()
+        
+        self.themeObserver?.invalidate()
+        self.themeObserver = nil
     }
     
     
@@ -120,9 +104,9 @@ final class ThemeViewController: NSViewController {
         
         guard let destinationController = segue.destinationController as? ThemeMetaDataViewController else { return }
         
-        destinationController.representedObject = self.theme
+        destinationController.representedObject = self.theme?.metadata
         destinationController.isBundled = self.isBundled
-        self.storedMetadata = self.theme?[DictionaryKey.metadata.rawValue]?.copy() as? NSDictionary
+        self.storedMetadata = self.theme?.metadata
     }
     
     
@@ -130,25 +114,12 @@ final class ThemeViewController: NSViewController {
     override func dismiss(_ viewController: NSViewController) {
         
         if viewController is ThemeMetaDataViewController,
-            self.storedMetadata != self.theme?[DictionaryKey.metadata.rawValue]
+            self.storedMetadata != self.theme?.metadata
         {
             self.notifyUpdate()
         }
         
         super.dismiss(viewController)
-    }
-    
-    
-    /// theme is modified
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-        
-        switch keyPath {
-        case let keyPath? where self.observedKeys.contains(keyPath):
-            self.notifyUpdate()
-            
-        default:
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-        }
     }
     
     
@@ -158,47 +129,29 @@ final class ThemeViewController: NSViewController {
     /// notify theme update to delegate
     private func notifyUpdate() {
         
-        guard var theme = self.theme else { return }
+        guard let theme = self.theme else { return }
         
         // remove metadata key if empty
-        if theme[DictionaryKey.metadata.rawValue]?.count == 0 {
-            theme[DictionaryKey.metadata.rawValue] = nil
+        if theme.metadata?.isEmpty ?? false {
+            theme.metadata = nil
         }
         
         self.delegate?.didUpdate(theme: theme)
     }
     
+}
+
+
+extension Theme {
     
-    /// begin observing theme change
-    private func beginThemeObserving() {
-        
-        guard let theme = self.theme else { return }
-        
-        self.observedKeys.removeAll()
-        for (key, subdict) in theme {
-            guard key != DictionaryKey.metadata.rawValue else { continue }
-            
-            for case let keyPath as String in subdict.allKeys {
-                subdict.addObserver(self, forKeyPath: keyPath, context: nil)
-                self.observedKeys.update(with: keyPath)
-            }
-        }
-    }
+    static let didChangeNotification = Notification.Name("ThemeDidChangeNotification")
     
     
-    /// end observing current theme
-    private func endThemeObserving() {
+    override func setValue(_ value: Any?, forKeyPath keyPath: String) {
         
-        guard let theme = self.theme else { return }
+        super.setValue(value, forKeyPath: keyPath)
         
-        self.observedKeys.removeAll()
-        for (key, subdict) in theme {
-            guard key != DictionaryKey.metadata.rawValue else { continue }
-            
-            for case let keyPath as String in subdict.allKeys {
-                subdict.removeObserver(self, forKeyPath: keyPath)
-            }
-        }
+        NotificationCenter.default.post(name: Theme.didChangeNotification, object: self)
     }
     
 }

@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2018 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -31,9 +31,6 @@ import Cocoa
 }
 
 
-
-// MARK: -
-
 final class UnicodeInputViewController: NSViewController, NSTextFieldDelegate {
     
     // MARK: Public Properties
@@ -45,7 +42,7 @@ final class UnicodeInputViewController: NSViewController, NSTextFieldDelegate {
     
     // MARK: Private Properties
     
-    private var windowObserver: NSObjectProtocol?
+    private var windowObserver: NotificationObservation?
     
     @objc private dynamic var codePoint: String?
     @objc private dynamic var isValid = false
@@ -56,25 +53,25 @@ final class UnicodeInputViewController: NSViewController, NSTextFieldDelegate {
     // MARK: -
     // MARK: Lifecycle
     
-    deinit {
-        if let observer = self.windowObserver {
-            NotificationCenter.default.removeObserver(observer)
+    override func viewWillAppear() {
+        
+        super.viewWillAppear()
+        
+        self.windowObserver?.invalidate()
+        self.windowObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignMainNotification, object: nil, queue: .main) { [unowned self] _ in
+            guard NSDocumentController.shared.documents.count <= 1 else { return }  // The 1 is the document now resigning.
+            
+            self.view.window?.performClose(self)
         }
     }
     
     
-    override func viewDidLoad() {
+    override func viewDidDisappear() {
         
-        super.viewDidLoad()
+        super.viewDidDisappear()
         
-        self.windowObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignMainNotification, object: nil, queue: .main) { [unowned self] _ in
-            guard
-                NSApp.isActive,
-                NSDocumentController.shared.documents.count <= 1  // The 1 is the document now resigning.
-                else { return }
-            
-            self.view.window?.performClose(self)
-        }
+        self.windowObserver?.invalidate()
+        self.windowObserver = nil
     }
     
     
@@ -90,15 +87,15 @@ final class UnicodeInputViewController: NSViewController, NSTextFieldDelegate {
         
         guard
             let input = (obj.object as? NSTextField)?.stringValue,
-            let longChar = UInt32(codePoint: input)
+            let longChar = UTF32.CodeUnit(codePoint: input)
             else { return }
         
         self.unicodeName = longChar.unicodeName
         
-        guard let scalar = UnicodeScalar(longChar) else { return }
+        guard let scalar = Unicode.Scalar(longChar) else { return }
         
         self.isValid = true
-        self.characterString = String(Character(scalar))
+        self.characterString = String(scalar)
     }
     
     
@@ -110,9 +107,8 @@ final class UnicodeInputViewController: NSViewController, NSTextFieldDelegate {
         
         guard self.characterString?.isEmpty == false else { return }
         
-        guard let receiver = NSApp.target(forAction: #selector(UnicodeInputReceiver.insertUnicodeCharacter(_:))) as? UnicodeInputReceiver else {
-            NSSound.beep()
-            return
+        guard let receiver = NSApp.target(forAction: #selector(UnicodeInputReceiver.insertUnicodeCharacter)) as? UnicodeInputReceiver else {
+            return NSSound.beep()
         }
         
         receiver.insertUnicodeCharacter(self)
@@ -129,7 +125,7 @@ final class UnicodeInputViewController: NSViewController, NSTextFieldDelegate {
 
 // MARK: Private Methods
 
-private extension UInt32 {
+private extension UTF32.CodeUnit {
     
     /// initialize from a possible Unicode code point representation like `U+1F600`, `1f600`, `0x1F600` and so on.
     init?(codePoint: String) {

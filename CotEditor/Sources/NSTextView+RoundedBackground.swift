@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2019 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ extension NSTextView {
         // avoid invoking heavy-duty `range(for:)` as possible
         guard
             let layoutManager = self.layoutManager,
-            layoutManager.hasTemporaryAttribute(for: .roundedBackgroundColor),
-            let dirtyRange = self.range(for: dirtyRect)
+            let dirtyRange = self.range(for: dirtyRect),
+            layoutManager.hasTemporaryAttribute(.roundedBackgroundColor, in: dirtyRange)
             else { return }
         
         NSGraphicsContext.saveGraphicsState()
@@ -69,10 +69,10 @@ extension NSTextView {
         return rects.map { rect in
             let corners: RectCorner = {
                 switch rect {
-                case _ where rects.count == 1: return .allCorners
-                case rects.first:              return [.topLeft, .bottomLeft]
-                case rects.last:               return [.topRight, .bottomRight]
-                default:                       return []
+                    case _ where rects.count == 1: return .allCorners
+                    case rects.first:              return [.topLeft, .bottomLeft]
+                    case rects.last:               return [.topRight, .bottomRight]
+                    default:                       return []
                 }
             }()
             let radius = rect.height / 4

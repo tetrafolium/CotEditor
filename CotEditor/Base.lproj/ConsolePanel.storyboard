@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="14313.18" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="EcT-zs-4uz">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="EcT-zs-4uz">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14313.18"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17132"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
         <!--Window Controller-->
         <scene sceneID="Ra4-72-mvU">
             <objects>
-                <windowController showSeguePresentationStyle="single" id="EcT-zs-4uz" customClass="ConsoleWindowController" customModule="CotEditor" customModuleProvider="target" sceneMemberID="viewController">
+                <windowController showSeguePresentationStyle="single" id="EcT-zs-4uz" customClass="ConsolePanelController" customModule="CotEditor" customModuleProvider="target" sceneMemberID="viewController">
                     <window key="window" title="Console" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingMode="disallowed" id="6" customClass="NSPanel">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" resizable="YES" utility="YES"/>
                         <rect key="contentRect" x="196" y="240" width="360" height="200"/>
@@ -20,7 +20,7 @@
                                     <nil key="toolTip"/>
                                     <button key="view" verticalHuggingPriority="750" id="LmD-iK-XXv">
                                         <rect key="frame" x="8" y="14" width="42" height="43"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                        <autoresizingMask key="autoresizingMask"/>
                                         <buttonCell key="cell" type="push" bezelStyle="rounded" image="ClearTemplate" imagePosition="overlaps" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="OJt-Sj-vUu">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="system"/>
@@ -72,6 +72,10 @@
                                         </textView>
                                     </subviews>
                                 </clipView>
+                                <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="2gD-7P-ZXo">
+                                    <rect key="frame" x="-100" y="-100" width="360" height="16"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                </scroller>
                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" controlSize="small" horizontal="NO" id="wum-yU-z29">
                                     <rect key="frame" x="346" y="0.0" width="14" height="200"/>
                                     <autoresizingMask key="autoresizingMask"/>
@@ -91,7 +95,7 @@
                     </connections>
                 </viewController>
                 <customObject id="RSJ-fj-Hpl" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
-                <textFinder incrementalSearchingEnabled="YES" id="hzY-Bm-wcu">
+                <textFinder incrementalSearchingEnabled="YES" incrementalSearchingShouldDimContentView="YES" id="hzY-Bm-wcu">
                     <connections>
                         <outlet property="client" destination="NIi-Kj-Qca" id="Mhr-Dc-cvz"/>
                         <outlet property="findBarContainer" destination="pbR-PK-wLW" id="RbM-S5-OKQ"/>

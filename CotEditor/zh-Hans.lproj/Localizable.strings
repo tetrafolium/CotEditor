@@ -10,7 +10,7 @@
  
  ------------------------------------------------------------------------------
  
- © 2014-2018 CotEditor Project
+ © 2014-2020 CotEditor Project
  
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -54,11 +54,6 @@
 "What’s New in CotEditor %@" = "CotEditor %@ 新特性";  // %@ is version number
 
 
-// Share menu
-"Share" = "共享";
-"No Document" = "无文稿";
-
-
 
 /* MARK: AppDelegate */
 // Format - Syntax coloring menu item title
@@ -72,8 +67,8 @@
 "Open as Text File" = "以文本方式打开";
 "A new theme named “%@” has been successfully installed." = "新主题“%@”安装完成";
 
-// Window title of bug report
-"Bug Report" = "错误报告";
+// Window title of issue report
+"Issue Report" = "问题报告";
 
 
 
@@ -89,7 +84,12 @@
 "%@ strings replaced." = "已替换 %@ 个匹配";
 "Invalid regular expression" = "无效的正则表达式";
 "Empty find string" = "空的搜索字符串";
+"The option “in selection” is enabled, although nothing is selected." = "“在选择中搜索”选项被激活，但是并没有内容被选中。";
 "Input text to find." = "输入文本以查找。";
+"Select the search scope in document or disable “in selection” option." = "在文档中选择搜索范围，或者禁用“在选择中搜索”。";
+
+// accessibility announcement
+"Search wrapped." = "已从头搜索";  // announced when the search restarted from the beginning.
 
 
 /* MARK: FindPanelController */
@@ -120,11 +120,11 @@
 
 /* MARK: Document Controller */
 // File open accessory's menu item title
-"Auto-Detect" = "自动检测";
+"Automatic" = "自动";
 
 // Binary file alert
 "The file “%@” doesn’t appear to be text data." = "文件 “%@” 不是文本数据";
-"The file is %@.\n\nDo you really want to open the file?" = "文件 %@.\n\n确定要打开该文件？";
+"The file appears to be %@.\n\nDo you really want to open the file?" = "文件 %@.\n\n确定要打开该文件？";  // FIXME: is -> appears to be
 
 // Large file alert
 "The file “%@” has a size of %@." = "“%@”文件尺寸为 %@。";
@@ -176,7 +176,8 @@
 
 /* MARK: Touch Bar */
 // Touch bar item labels -Document View
-"Invisibles" = "不可见字符";
+"Invisibles" = "不可见元素";
+"Indent Guides" = "缩进指示";
 "Wrap Lines" = "换行";
 
 // Touch bar item labels -Text View
@@ -197,7 +198,7 @@
 // Summary item names
 "Color" = "颜色";
 "Line Number" = "行号";
-"Invisible Characters" = "不可见字符";
+"Invisibles" = "不可见元素";
 "Print Header" = "打印页眉";
 "Primary Header" = "主页眉";
 "Primary Header Alignment" = "主页眉对齐";
@@ -216,7 +217,6 @@
 "Same as Document’s Setting" = "同文档设置一致";
 "Black and White" = "黑白";
 "Print" = "打印";
-"Print All" = "全部打印";
 "Syntax Name" = "语法名";
 "Document Name" = "文档名";
 "File Path" = "文件路径";
@@ -268,6 +268,7 @@
 "Text" = "文本";
 "Copy as Rich Text" = "以富文本拷贝";
 "Select All" = "全部选择";
+"Straighten Quotes" = "直引号";
 
 
 
@@ -281,16 +282,18 @@
 "Show Status Bar" = "显示状态栏";
 "Hide Navigation Bar" = "隐藏导航栏";
 "Show Navigation Bar" = "显示导航栏";
-"Hide Invisible Characters" = "隐藏不可见字符";
-"Show Invisible Characters" = "显示不可见字符";
+"Hide Invisibles" = "隐藏不可见元素";
+"Show Invisibles" = "显示不可见元素";
 "Hide Page Guide" = "隐藏页面指示";
 "Show Page Guide" = "显示页面指示";
+"Hide Indent Guides" = "隐藏缩进指示";
+"Show Indent Guides" = "显示缩进指示";
 "Unwrap Lines" = "不换行";
 "Wrap Lines" = "换行";
 
-// Tooltip for "Show Invisible Characters" menu item
-"Show or hide invisible characters in document" = "显示或隐藏文档中的不可见字符";
-"To show invisible characters, set them in Preferences" = "要显示不可见字符，请在偏好设置中进行设定";
+// Tooltip for "Show Invisibles" menu item
+"Show or hide invisible characters in document" = "显示或隐藏文档中的不可见元素";
+"To show invisible characters, set them in Preferences" = "要显示不可见元素，请在偏好设置中进行设定";
 
 
 
@@ -325,6 +328,7 @@
 "Coloring text…" = "文本着色中...";
 "Please wait for a while." = "请稍等片刻...";
 "Extracting %@…" = "%@ 解压中...";
+"Preparing coloring…" = "准备着色中...";
 "Applying colors to text" = "在文本上使用颜色";
 "keywords" = "关键字";
 "commands" = "命令";
@@ -349,7 +353,7 @@
 
 // General pane
 // Autosave setting update alert
-"The change will be applied first at the next launch." = "变更将在下次启动时生效。";
+"The change will be applied first on the next launch." = "变更将在下次启动时生效。";
 "Do you want to restart CotEditor now?" = "现在就重启 CotEditor 吗？";
 "Restart Now" = "现在重启";
 "Later" = "稍后";
@@ -371,12 +375,6 @@
 
 
 // Format pane
-// Encoding menu alert
-"Are you sure you want to change to “%@”?" = "确定要变更至“%@”吗？";
-"The default “Auto-Detect” is recommended for most cases." = "在绝大多数情况下，推荐使用默认的“自动检测”。";
-"Change to “%@”" = "“变更至%@”";
-"Revert to “Auto-Detect”" = "还原回“自动检测”";
-
 // Installed syntax styles action menu items
 "Duplicate “%@”…" = "拷贝“%@”…";
 "Export “%@”…" = "导出“%@”…";
@@ -506,7 +504,7 @@
 "“%@” includes the Command key." = "“%@”包含了 Command 键。";
 "Please choose another key." = "请选择其他按键。";
 "Single type is invalid for a shortcut." = "单独的按键类型不能被用作快捷键。";
-"Please combine with another keys." = "请与其他键组合使用。";
+"Please combine with other keys." = "请与其他键组合使用。";
 
 
 
@@ -533,14 +531,14 @@
 
 // Script file error recovery suggestions
 "Check the script file." = "请确认脚本文件。";
-"Check permission of the script file." = "请确认脚本文件的权限。";
+"Check the permission of the script file." = "请确认脚本文件的权限。";
 
 
 
 /* MARK: FileDropComposer */
 // Descriptions about variables in the file drop feature
 "The dropped file absolute path." = "拖拽的文件绝对路径";
-"The relative path between dropped file and the document." = "拖拽的文件与编辑中文档的相对路径";
+"The relative path between the dropped file and the document." = "拖拽的文件与编辑中文档的相对路径";
 "The dropped file’s name including extension (if exists)." = "拖拽的文件的文件名以及扩展名（如果存在）";
 "The dropped file’s name without extension." = "不带扩展名的文件名";
 "The dropped file’s extension." = "拖拽的文件的扩展名";
@@ -549,6 +547,7 @@
 "The parent directory name of dropped file." = "拖拽的文件的上级目录";
 "(If the dropped file is an image) image width." = "图片宽度（如果拖拽文件是图像）";
 "(If the dropped file is an image) image height." = "图片高度（如果拖拽文件是图像）";
+"(If the dropped file is a text file) file content." = "文件内容（如果拖拽文件是文本文件）";
 
 
 

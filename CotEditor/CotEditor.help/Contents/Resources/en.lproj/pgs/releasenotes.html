@@ -21,10 +21,114 @@
 <h1>Release Notes</h1>
 
 
+
 <article>
 <header>
-	<h1>CotEditor 3.7.0</h1>
-	<p>release: <time>2019-02-01</time></p>
+	<h1>CotEditor 3.9.3</h1>
+	<p>release: <time>2020-07-18</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Significantly optimize the performance of text layout especially when pasting a relatively large amount of text.</li>
+	<li>Update JSON syntax style.</li>
+	<li><span class="trivial">trivial</span>: Tweak some UI styles.</li>
+	<li><span class="trivial">dev</span>: Update Yams from 2.0.0 to 3.0.1.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue in the highlighting instances of selected text that the highlight shape spread wrongly when the selected text included line breaks.</li>
+	<li>Fix an issue in the syntax style editing that some keywords that can be parsed as a YAML object, such as <code>true</code> or <code>null</code>, were not stored as a string.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.2</h1>
+	<p>release: <time>2020-06-28</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Suppress showing a dialog when opening a file with the “.ts” file extension as it may not be a MPEG-2 Transport Stream file but a TypeScript file.</li>
+	<li>Improve the style and behavior of the add/remove rule button in the multiple replacement window.</li>
+	<li><span class="trivial">trivial</span>: Delete multiple replacement rules by dropping items into the Trash.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue in the multiple replacement definition editing where the result order broke, or even the application crashed when reordering multiple rules at once.</li>
+	<li>Fix an issue in the editor that the cursor skipped the space just after the word when moving the cursor to the next word boundary with <kbd>⌥⇧→</kbd> or <kbd>⌥→</kbd> shortcut.</li>
+	<li>Fix an issue in theme editing that the editing color was occasionally forcibly updated in the editor's text color when an editor has the focus.</li>
+	<li>Fix an issue in theme editing that the crashed when setting one of the system's developer colors.</li>
+	<li>Fix an issue in theme editing that the option “use system color” for the selection color could not disable.</li>
+	<li>Fix an issue in theme editing that the values in the theme editor were not updated when the bundled theme currently edited is restored.</li>
+	<li>Fix an issue in the dialog for the pattern line sort that the sample line could indicate a wrong sort key scope when the sort key type is “column.”</li>
+	<li>Fix the feedback animation when dragging and dropping items in a table.</li>
+    <li><span class="trivial">trivial</span>: Fix an issue that the menus in toolbar expended unwantedly after customizing toolbar.</li>
+    <li><span class="trivial">trivial</span>: Fix some layout corruptions under macOS 11 Big Sur (beta).</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.1</h1>
+	<p>release: <time>2020-06-14</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Increase the size of the invisible space symbol.</li>
+	<li>Adjust the position of invisible symbols in vertical text orientation.</li>
+	<li><span class="trivial">trivial</span>: Avoid selecting no item in the snippet setting table.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue in the syntax style editing that saving existing syntax styles failed.</li>
+	<li>Fix text flickering while pinch-zoom.</li>
+	<li>Fix an issue in the editor where the bottom part of the editor became occasionally not responsive when the editor is zoomed-out.</li>
+	<li>Fix an issue in the find panel fields that carriage returns (CR) were not drawn as line endings but control characters.</li>
+	<li>Fix an issue in the syntax style editing that reverting a modified bundled style through the style editor did not remove the existing user file.</li>
+	<li>Fix an issue under macOS 10.14 that the text in the About panel was black even in the Dark Mode.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.0</h1>
+	<p>release: <time>2020-05-27</time></p>
 </header>
 
 
@@ -32,7 +136,796 @@
 <h2>New Features</h2>
 
 <ul>
-	<li>Multi-cursor editing.</li>
+	<li>Rewrite the <a href="../pgs/howto_display_invisibles.html">invisible character drawing feature</a> to draw alternative symbols more properly under various environments.</li>
+	<li>Add an option to draw indent guides.</li>
+	<li>Display Unicode's general category in the character inspector.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Adjust the text baseline to draw characters vertically center in lines.</li>
+	<li>Optimize the performance of “Replace All” with a large number of matches.</li>
+	<li>Improve the performance when pasting a huge text.</li>
+	<li>Remove the text encoding option for opened documents; instead, the encoding is always detected automatically when opening an existing file.</li>
+	<li>Update the Unicode block table to the latest Unicode 13.0.0.</li>
+	<li>Duplicate lines more intelligently.</li>
+	<li>Improve the encodings list edit view.</li>
+	<li>Adjust the width of toolbar items.</li>
+	<li>Remove “vertical orientation” from the selections of the Writing Direction toolbar button.</li>
+	<li>Make borders of line number views and opacity sample tips more distinct in the high-contrast mode.</li>
+	<li>Adjust the visible area after unwrapping lines in RTL text mode.</li>
+	<li>Remove the default value of the snippet keybindings, that inserts <code>&lt;br /&gt;</code> with <kbd>⇧↩</kbd>.</li>
+	<li>Update help content.</li>
+	<li><span class="trivial">trivial</span>: Rename “Auto-Detect,” the option detecting the file encoding automatically, to “Automatic.”</li>
+	<li><span class="trivial">trivial</span>: Omit surrogate pair code points in the character inspector if the character consists of multiple Unicode characters.</li>
+	<li><span class="trivial">trivial</span>: Adjust the drawing position of the zoomed character in the character inspector.</li>
+	<li><span class="trivial">trivial</span>: Update some labels in the Format pane.</li>
+	<li><span class="trivial">trivial</span>: Display default values as the input field's placeholder for window size setting when empty.</li>
+	<li><span class="trivial">trivial</span>: Remove the snippet keybindings setting migration from CotEdtiror 2.x format and earlier.</li>
+	<li><span class="trivial">trivial</span>: Make the identifier for document autosaving longer.</li>
+	<li><span class="trivial">dev</span>: Update the build environment to Xcode 11.5 (Swift 5.2).</li>
+	<li><span class="trivial">dev</span>: Replace YAML.framework with Yams.</li>
+	<li><span class="trivial">dev</span>: Remove Carthage dependency.</li>
+	<li><span class="trivial">dev</span>: Migrate codesign-specific build settings to .xcconfig (thanks to Yoshimasa Niwa!).</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where the application crashed when a hanging indent depth becomes larger than the editor area.</li>
+	<li>Fix an issue where the application hung up by extending the selection with shortcut <kbd>⌥⇧→</kbd> when the character to select is a national flag emoji.</li>
+	<li>Fix an issue where the item “Automatic” (ex. Auto-Detect) was missing in the encoding selections in the open panel.</li>
+	<li>Fix an issue with multiple cursors where extra characters were deleted when performing forward delete with selection.</li>
+	<li>Fix an issue with multiple cursors where just a single UTF-16 character was deleted instead of the whole character when the character to delete consists of multiple UTF-16 characters.</li>
+	<li>Fix an issue where the outline menu could select the wrong item while typing.</li>
+	<li>Fix an issue where the line numbers could be shifted when printing vertical text orientation documents.</li>
+	<li>Fix an issue where line endings could remain when deleting duplicate lines with multiple selections.</li>
+	<li>Fix an issue in the character inspector where the inspector was not shown when the target character is hidden due to scroll.</li>
+	<li>Fix an issue in the line number view where the line number of the current line was not bolded under a specific condition.</li>
+	<li>Fix an issue in scripting with AppleScript/JXA where the application crashed by performing <code>string in ...</code> command.</li>
+	<li>Fix an issue in scripting with AppleScript/JXA where the contents of a document can rarely be overwritten with the contents of another document window under very specific conditions.</li>
+	<li>Fix an issue with scripting with AppleScript/JXA where the <code>line range</code> command selected a wrong range when the line endings of the document are CRLF.</li>
+	<li>Fix an issue with scripting with AppleScript/JXA where selecting a single line by specifying a single integer argument to <code>line range</code> did not work.</li>
+	<li>Fix an issue in the editor where lines were initially wrapped at the wrong position when the text orientation is vertical.</li>
+	<li>Fix an issue where the theme color was not applied to the color of typed text in split view.</li>
+	<li>Fix an issue in the RTL text mode where the page guide disappeared when lines are unwrapped.</li>
+	<li>Fix an issue where the current line highlight did not update properly after changing some settings.</li>
+	<li>Fix an issue in the find panel's input fields where a regular expression pattern for Unicode code point was not highlighted properly when the hex contains uppercase letters.</li>
+	<li>Fix an issue in the find panel's input fields where invisible control characters were drawn in the normal text color under specific conditions.</li>
+	<li>Fix an issue where the print font name in the Print pane was drawn in black even in the dark mode.</li>
+	<li>Fix an issue in the editor where the previous drawing could remain in a blank space after changing a display setting of the editor.</li>
+	<li>Fix the help button in the advanced find options view.</li>
+	<li>Fix missing localization.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.12</h1>
+	<p>release: <time>2020-03-08</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Include the last line break to line count.</li>
+	<li>Update “Kotlin”, “JSON”, and “SVG” syntax styles.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where the horizontal scrollbar didn't appear by unwrapping lines if the document consists of a single very long line.</li>
+	<li>Fix an issue where the application could crash after parsing syntax in a large document to highlight.</li>
+	<li>Fix an issue where the overscrolling was enabled only after window is resized.</li>
+	<li>Fix an issue where the current line was just partly highlighted under specific conditions.</li>
+	<li>Fix an issue in the line number view where the line number of the selected line was not bolded under a specific condition.</li>
+	<li>Fix an issue where the find panel could not display the result table when the find string is very long.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.11</h1>
+	<p>release: <time>2020-02-28</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Avoid showing the rainbow cursor while parsing URLs in the editor with large contents when the “link URLs in document” option is enabled.</li>
+	<li>Improve “Snakecase” and “Camelcase” commands to handle uppercase letters with accent properly.</li>
+	<li>Improve message for syntax highlighting progress.</li>
+	<li>Improve drawing performance and general stability.</li>
+	<li><span class="trivial">trivial</span>: Tweak the visual notification for wrapping search.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where a document window zombie appeared when the window was closed while detached character info popovers remain.</li>
+	<li>Fix an issue where a blank progress dialog for a long syntax highlighting could rarely remain when the document is updated while parsing.</li>
+	<li>Fix an issue where the <code>\x{hhhh}</code>, <code>\0ooo</code>, and  <code>\$</code> style character expressions in the regular expression pattern were not syntax-highlighted correctly.</li>
+	<li>Fix an issue where the application could rarely crash when printing a document.</li>
+	<li>Fix an issue where the application could rarely crash when opening a document under macOS 10.14 and earlier.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.10</h1>
+	<p>release: <time>2020-02-15</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Optimize the performance of the invisible character drawing, the hanging indent calculation, and the line number view drawing.</li>
+	<li>Make space to draw the invisible symbol for ZERO WIDTH SPACE (U+200B) when the “other invisible characters” option is enabled.</li>
+	<li>Enable “Move Line Down” and “Move Line Up” commands swap lines with the last empty line.</li>
+	<li>Improve general performance while typing.</li>
+	<li>Update “CSS” syntax style.</li>
+	<li><span class="trivial">trivial</span>: Keep the visible area after resizing a document window even if overscrolling is enabled.</li>
+	<li><span class="trivial">trivial</span>: Adjust the theme “Note”.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where the Unicode code point field in the document inspector displayed always “not selected.”</li>
+	<li>Fix an issue where insertion points multiplied too many when adding them with <kbd>^⇧↑</kbd> or <kbd>^⇧↓</kbd> shortcut under specific conditions.</li>
+	<li>Fix an issue where default theme change in the preferences was not applied to opened documents under specific conditions.</li>
+	<li>Fix an issue where unescaping replacement string in the regular expression replacement failed with specific text patterns.</li>
+	<li>Fix an issue where the editor's line height and tab width in the opened windows did not update even the setting is changed.</li>
+	<li>Fix an issue where the rainbow cursor could appear when finding the brace pair in the latter part of a large document.</li>
+	<li>Fix an issue where the application crashed when moving lines down under specific conditions.</li>
+	<li>Fix an issue where the “Sort by Pattern” with column sort key dropped the last character from the sort key string.</li>
+	<li>Fix an issue where the current line highlight remained when quickly moving selection by dragging.</li>
+	<li>Fix an issue where the writable area of newly added split editors shrank.</li>
+	<li>Fix an issue in scripting where settings some properties, such as <code>tab width</code>, <code>tab expands</code> and <code>wrap lines</code>, in the document creation phase were ignored.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.9</h1>
+	<p>release: <time>2020-01-30</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Significantly reduce the time of the rainbow cursor after the opening of a large document by optimizing hanging indent calculation.</li>
+	<li><span class="trivial">trivial</span>: Optimize current line highlighting.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue on CotEditor 3.8.8 where the application could rarely crash immediately after opening a document window under some very specific conditions.</li>
+	<li>Fix an issue where the progress indicator for the outline menu in the navigation bar could rarely remain.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.8</h1>
+	<p>release: <time>2020-01-28</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li>Add a new “Straighten Quotes” command to Edit &gt; Substitutions menu.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Add “Replace Quotes,” “Replace Dashes,” and “Replace Text” commands to Edit &gt; Substitutions menu.</li>
+	<li>Restore the default window size setting in the Window preferences pane.</li>
+	<li>Enable setting multiple cursor points in snippets.</li>
+	<li>Optimize the timing of view updating in some specific views.</li>
+	<li>Optimize some background jobs.</li>
+	<li>Toggle only the checkbox in a table that the user actually clicked and ignore others when the clicked checkbox is not contained to the selected rows.</li>
+	<li>Fold license descriptions in the acknowledgments.</li>
+	<li><span class="trivial">trivial</span>: Tweak the visual notification for wrapping search.</li>
+	<li><span class="trivial">dev</span>: Replace Differ framework with DifferenceKit.</li>
+	<li><span class="trivial">dev</span> <span class="label">non-AppStore ver.</span>: Change the Sparkle branch from “ui-separation-and-xpc” to “2.x”.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue on macOS 10.15 where document windows had a glitch when a search is wrapped.</li>
+	<li>Fix an issue where the font size of the line number view was occasionally not updated even when text size is changed.</li>
+	<li>Fix an issue where <kbd>⌘⇧T</kbd> shortcut key assigned for “Show/Hide Tab Bar”  was ignored under specific conditions</li>
+	<li>Fix an issue where the width of the inspector was occasionally not properly set.</li>
+	<li>Fix an issue where the wrong warning message displayed in the multiple replacement panel even when there is no invalid condition.</li>
+	<li>Fix a possible crash when transforming the case of selection that includes specific character order.</li>
+	<li>Fix a possible crash when a document file is modified by another process.</li>
+	<li><span class="trivial">trivial</span>: Fix a typo in French (Thanks to Arnaud Tanchoux!).</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.7</h1>
+	<p>release: <time>2019-12-09</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Revert shortcut <kbd>⌘/</kbd> to comment-out toggle.</li>
+	<li>Add “.zprofile” and “.zlogin” extensions to “Shell Script” syntax style.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.6</h1>
+	<p>release: <time>2019-12-07</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Change the default shortcut for Format &gt; Font &gt; “Reset to Default” command to <kbd>⌘0</kbd> and let “Bigger” command accept also <kbd>⌘=</kbd>.</li>
+	<li>Add shortcut <kbd>⌘/</kbd> to “Show/Hide Status Bar” command.</li>
+	<li>Add shortcut <kbd>⌘⇧T</kbd> to “Show/Hide Tab Bar” command.</li>
+	<li>Avoid showing rainbow cursor when canceling the initial syntax highlight.</li>
+	<li><span class="trivial">trivial</span>: Modify the layout of the progress dialog and the regular expression syntax reference.</li>
+	<li><span class="trivial">trivial</span>: Let input fields in the Edit pane accept values without a percent sign.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where creating multiple cursors by rectangular selection failed under macOS 10.15.</li>
+	<li>Fix an issue where the selection highlight color in inactive windows could make text hard to read under macOS 10.14–10.15.</li>
+	<li>Fix an issue where the progress message by find/replacement was not updated when no occurrence found.</li>
+	<li>Fix a possible crash when an invalid color code is input to the color code panel.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.5</h1>
+	<p>release: <time>2019-11-14</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Uncomment comment lines even if the delimiters locate after some indent.</li>
+	<li>Raise an alert when performing find (or replacement) with “in selection” option while no text is selected.</li>
+	<li>Change the Console font to monospaced.</li>
+	<li>Dim the Console content area during the incremental search.</li>
+	<li>Accept importing custom syntax styles with “.yml” extension.</li>
+	<li>Avoid re-parsing syntax highlight when the appearance is switched.</li>
+	<li>Support Dark Mode in the help.</li>
+	<li><span class="label">non-AppStore ver.</span>: Update Sparkle framework.</li>
+	<li><span class="trivial">trivial</span>: Tweak some terminology in the menu.</li>
+	<li><span class="trivial">trivial</span>: Adjust the pinch-zoom pitch.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where the text color in the status bar was sometimes not updated immediately after switching window appearance.</li>
+	<li>Fix an issue where parsing syntax style files could fail.</li>
+	<li>Fix an issue where uncommenting inline comments failed when multiple cursors locate in the same line.</li>
+	<li>Avoid rainbow cursor when about to display the Text menu while selecting large number of text.</li>
+	<li>Update PHP and Julia syntax styles to remove duplicated keywords.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.4</h1>
+	<p>release: <time>2019-10-23</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Insert soft tabs to all insertion points when typing the tab key.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue on macOS 10.13-14 that the application became unstable with some specific actions when the cursor locates the end of the document.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.3</h1>
+	<p>release: <time>2019-10-20</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Restore all of the last cursors on the window restoration.</li>
+	<li>Highlight matching braces for all cursors.</li>
+	<li>Adjust the printing area of vertical text orientation.</li>
+	<li>Update JSON syntax style by adding “.resolved” extension.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix area to draw text on printing, especially for macOS 10.15 Catalina.</li>
+	<li>Fix an issue on macOS 10.13-14 where spaces at the end of the document could not be deleted by delete key.</li>
+	<li>Fix an issue on macOS 10.13-14 where performing return key just after an open bracket at the end of the document made the application freeze.</li>
+	<li>Fix an issue where the editor theme for newly opened windows did not match to the window appearance when the system appearance was changed after the application launch.</li>
+	<li>Fix an issue where a highlighting indicator showed up at a wrong location when pressing the enter key just before a closing bracket.</li>
+	<li><span class="trivial">trivial</span>: Fix French localization.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.2</h1>
+	<p>release: <time>2019-10-14</time></p>
+</header>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Add an additional workaround to detour the bug in macOS 10.13-14 that crashes/freezes the application.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.1</h1>
+	<p>release: <time>2019-10-11</time></p>
+</header>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Address a critical issue where the application could crash under macOS 10.13-14.</li>
+	<li>Fix an issue that the documents opened together were not opened as a single window with multiple tabs.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.8.0</h1>
+	<p>release: <time>2019-10-09</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li>Add “Appearance” option in the Appearance preferences pane to change document window appearance whatever the system appearance is (only on macOS 10.14 and later).</li>
+	<li>Add a new theme “Anura (Dark)”.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Change the system requirement to <strong>macOS 10.13 High Sierra and later</strong>.</li>
+	<li>Improve the theme switching algorithm between light and dark appearances.</li>
+	<li>Keep multiple cursors after pasting multiple lines.</li>
+	<li>Update the result table of “Find All” even when no substring was found.</li>
+	<li>Adjust drawing of the alternative character for invisible control characters.</li>
+	<li>Adjust text baseline of input fields in the find panel when a fallback font is used.</li>
+	<li>Always enable Left to Right button in Writing Direction toolbar button.</li>
+	<li>Change the way to count words for stability.</li>
+	<li>Update “TOML” syntax style to support array of tables (Thanks to Takuto ASAKURA!)</li>
+	<li><span class="trivial">dev</span>: Update build environment to Xcode 11.1 (Swift 5.1, macOS 10.15 SDK).</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix the selection movement direction after <kbd>⌥⇧←</kbd> or <kbd>⌥⇧→</kbd> shortcut.</li>
+	<li>Fix an issue where scripting commands <code>convert</code> and <code>reinterpret</code> failed.</li>
+	<li>Fix an issue where the color panel for theme editing could occasionally not change.</li>
+	<li>Fix an issue where the appearance of Acknowledgements window was not updated when user changed the system appearance after the launch.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.8</h1>
+	<p>release: <time>2019-06-30</time></p>
+</header>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where the editor could not scroll horizontally under specific conditions.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.7</h1>
+	<p>release: <time>2019-06-25</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li>Add a new option to the Appearance pane to disable ligatures.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Keep last opacity state of restored document windows.</li>
+	<li>Update behavior of Opt+Arrow shortcut series.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where find result was unwantedly collapsed when resizing the find panel.</li>
+	<li>Fix an issue where hanging indent was not applied to the printed document.</li>
+	<li>Workaround the issue where an editor resizing required a too long time.</li>
+	<li>Fix a possible crash in the Appearance preferences pane.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.6</h1>
+	<p>release: <time>2019-06-18</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li>Add new variable “file content” to File Drop feature to insert the file content when the dropped file is a text file.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Apply the change of “show other invisible characters” option immediately to the editors.</li>
+	<li>Add “Hide extension” option to the save dialog.</li>
+	<li>Use the system appearance in the input candidate window even when the theme has a dark background color.</li>
+	<li>Give some feedback about the search result in VoiceOver.</li>
+	<li>Improve the behavior of Opt+Arrow shortcut series to stop the by punctuation marks, such as <code>.</code> and  <code>:</code>.</li>
+	<li>Hide unused items in the font panel toolbar.</li>
+	<li>Optimize the performance of finding the matching brace to highlight.</li>
+	<li>Optimize the performance of line number drawing.</li>
+	<li>Optimize the performance of hanging indent calculation.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where unwanted whitespace was added for variation selector <code>U+FE0E</code> when control characters are visible.</li>
+	<li>Fix an issue with scripting where regular expression anchors, such as <code>^</code> or <code>$</code>, did not match lines.</li>
+	<li>Fix an issue where the “Writing Direction” toolbar item did not work if it overflows from the visible toolbar area.</li>
+	<li>Fix an issue where <code>U+FEFF</code> cannot be input via “Input in Unicode hex” command.</li>
+	<li>Fix a possible crash with continuous <code>U+FEFF</code> characters.</li>
+	<li>Fix a possible crash on macOS 10.12.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.5</h1>
+	<p>release: <time>2019-05-27</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Select the current editor's font in font panel when display it.</li>
+	<li>Update Swift syntax style to support Swift 5.1.</li>
+	<li>Underline URLs in printed document also if “Link URLs in document” option is enabled.</li>
+	<li><span class="trivial">dev</span>: Update Differ framework to 1.4.3.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix performance regression due to a bug fix in CotEditor 3.7.4.</li>
+	<li>Fix an issue where the snippet texts were still occasionally not editable from the preferences pane.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.4</h1>
+	<p>release: <time>2019-05-18</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Add French localization (thanks to Aurélien Roy!).</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where the snippet texts were occasionally not editable from the preferences pane.</li>
+	<li>Fix an issue where the Unicode character name for <code>U+FEFF</code> (ZERO WIDTH NO-BREAK SPACE) was empty.</li>
+	<li>Fix an issue where the application did crash when the selected text contains some specific control characters.</li>
+	<li>Fix an issue where the word completion suggested words start with letters in the middle of the typed word.</li>
+	<li>Fix an issue where needless live document analysis performed even when the status bar and inspector are invisible.</li>
+	<li>Fix missing localization.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.3</h1>
+	<p>release: <time>2019-04-26</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>“Input in unicode hex” now supports multi-cursor editing.</li>
+	<li>Make font size of outline view customizable.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where user settings could not be overwritten to export when the same filename already exists.</li>
+	<li>Fix an issue where clear buttons in the find panel's text fields could overlap with scroll bar areas.</li>
+	<li>Fix syntax style validator.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.2</h1>
+	<p>release: <time>2019-04-04</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Make the i-beam cursor more legible in vertical text orientation and dark background theme.</li>
+	<li>Use monospace numbers for line numbers in Find All result table.</li>
+	<li>Optimize performance highlighting found matches.</li>
+	<li><span class="trivial">dev</span>: Update build environment to Xcode 10.2 (Swift 5).</li>
+	<li><span class="trivial">dev</span>: Update Differ framework to 1.4.0.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue under macOS 10.12 where application hung up if some specific toolbar items are visible.</li>
+	<li>Fix an issue where the “Discard Changes” and “Cancel” buttons in the dialog for encoding reinterpretation performed oppositely (Thanks to Aurélien Roy!).</li>
+	<li>Fix an issue where color code editor was invisible under macOS 10.12.</li>
+	<li>Fix an issue where the Go to Line command did not jump to the input number of line when performed by clicking “Go” button.</li>
+	<li>Fix an issue where <code>change kana</code> scripting command did not work.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.1</h1>
+	<p>release: <time>2019-02-23</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Highlight all lines that contain one of the multi-insertion points as current lines.</li>
+	<li>Insert the text content of .textClipping files when dropped.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue where trailing whitespaces before the insertion points could be wrongly removed on the first auto-saving.</li>
+	<li>Improve stability.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.7.0</h1>
+	<p>release: <time>2019-02-14</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li><a href="../pgs/howto_edit_multiple_points.html">Multi-cursor editing</a>.</li>
 	<li>Add “Opacity” toolbar item to change editor's opacity.</li>
 	<li>Add “Surround Selection With” &gt; “Square Brackets” menu item.</li>
 </ul>
@@ -44,7 +937,10 @@
 
 <ul>
 	<li>Restore more UI state on window restoration.</li>
+	<li>Delete sequential paces character by character when they are not located at the beginning of a line even if “Expand tabs to spaces” option is enabled.</li>
+	<li>Keep selections after performing “Duplicate Lines.”</li>
 	<li>Remember the last used custom characters for “Surround Selection with Custom Characters” action.</li>
+	<li><span class="trivial">trivial</span>: Improve toolbar color.</li>
 </ul>
 </section>
 
@@ -53,9 +949,15 @@
 <h2>Fixes</h2>
 
 <ul>
+	<li>Fix an issue where “Replace All” could fail when the text to find is a combining character such as a diacritical mark.</li>
+	<li>Fix an issue where lines did not wrap correctly with vertical text orientation.</li>
 	<li>Fix an issue where the last syntax style was not applied when an unsaved document was restored from the last session.</li>
 	<li>Fix an issue where auto-completion could cancel suddenly under a restricted condition.</li>
-	<li>Fix a possible issue where word counting could stuck.</li>
+	<li>Fix an issue where the line wrap width of a split view could be set shorter than the actual view if scroll bars are set to be always visible.</li>
+	<li>Fix an issue where the year in the print header or console prompt was displayed wrongly in specific days (Thanks to Frédéric Blondiau!).</li>
+	<li>Fix an issue where closed windows remained on the memory.</li>
+	<li>Address an issue where selected ranges were set wrongly after updating the document due to an external modification.</li>
+	<li>Fix a possible issue where word counting could be stuck.</li>
 </ul>
 </section>
 </article>
@@ -77,7 +979,7 @@
 	<li>Update <code>cot</code> command-line tool:<ul>
 		<li>Fix an issue where stack trace displayed when using <code>--wait</code> option with some clients other than Terminal.app.</li>
 		<li>Fix an issue where <code>--column</code> could misplace the insertion point when a negative number was given.</li>
-    </ul></li>
+	</ul></li>
 </ul>
 </section>
 
@@ -163,7 +1065,7 @@
 		<li>Change <code>--column</code> count from 0-based to 1-based.</li>
 		<li>Improve error message when failed.</li>
 		<li>Fix an issue where the last empty line was ignored when specifying the cursor position with <code>--line</code> option.</li>
-    </ul></li>
+	</ul></li>
 	<li><span class="trivial">trivial</span>: Make the minimum width of outline inspector wider.</li>
 </ul>
 </section>
@@ -253,7 +1155,7 @@
 <h2>Fixes</h2>
 
 <ul>
-	<li>Fix the cursor location by changing the selection with shortcut <code>⌘←</code>.</li>
+	<li>Fix the cursor location by changing the selection with shortcut <kbd>⌘←</kbd>.</li>
 	<li>Fix an issue where the rainbow cursor could appear when cancelling syntax highlight with a large document multiple times.</li>
 </ul>
 </section>

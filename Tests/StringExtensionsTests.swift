@@ -9,7 +9,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2015-2019 1024jp
+//  © 2015-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -27,7 +27,32 @@
 import XCTest
 @testable import CotEditor
 
-class StringExtensionsTests: XCTestCase {
+final class StringExtensionsTests: XCTestCase {
+    
+    /// Test if the U+FEFF omitting bug on Swift 5 still exists.
+    ///
+    /// - Bug: <https://bugs.swift.org/browse/SR-10896>
+    func testFEFF() {
+        
+        let bom = "\u{feff}"
+        
+        // -> Some of these test cases must fail if the bug fixed.
+        XCTAssertEqual(bom.count, 1)
+        XCTAssertEqual(("\(bom)abc").count, 4)
+        XCTAssertEqual(NSString(string: bom).length, 0)  // correct: 1
+        XCTAssertEqual(NSString(string: "\(bom)\(bom)").length, 1)  // correct: 2
+        XCTAssertEqual(NSString(string: "\(bom)abc").length, 3)  // correct: 4
+        XCTAssertEqual(NSString(string: "a\(bom)bc").length, 4)
+        
+        let string = "\(bom)abc"
+        XCTAssertNotEqual(string.immutable, string)  // -> This test must fail if the bug fixed.
+        
+        // Implicit NSString cast is fixed.
+        // -> However, still crashes when `string.immutable.enumerateSubstrings(in:)`
+        let middleIndex = string.index(string.startIndex, offsetBy: 2)
+        string.enumerateSubstrings(in: middleIndex..<string.endIndex, options: .byLines) { (_, _, _, _) in }
+    }
+    
     
     func testCharacterEscape() {
         
@@ -44,6 +69,7 @@ class StringExtensionsTests: XCTestCase {
         XCTAssertEqual("foo\\\\\\nbar".unescaped, "foo\\\\\nbar")
         XCTAssertEqual("\\foo\\\\\\0bar\\".unescaped, "\\foo\\\\\u{0}bar\\")
         XCTAssertEqual("\\\\\\\\foo".unescaped, "\\\\\\\\foo")
+        XCTAssertEqual(#"foo：\n\n1"#.unescaped, "foo：\n\n1")
     }
     
     
@@ -61,22 +87,31 @@ class StringExtensionsTests: XCTestCase {
     }
     
     
+    func testWordsCount() {
+        
+        XCTAssertEqual("Clarus says moof!".numberOfWords, 3)
+        XCTAssertEqual("plain-text".numberOfWords, 2)
+        XCTAssertEqual("!".numberOfWords, 0)
+        XCTAssertEqual("".numberOfWords, 0)
+    }
+    
+    
     func testLinesCount() {
         
         XCTAssertEqual("".numberOfLines, 0)
         XCTAssertEqual("a".numberOfLines, 1)
-        XCTAssertEqual("\n".numberOfLines, 1)
-        XCTAssertEqual("\n\n".numberOfLines, 2)
+        XCTAssertEqual("\n".numberOfLines, 2)
+        XCTAssertEqual("\n\n".numberOfLines, 3)
+        XCTAssertEqual("\u{feff}".numberOfLines, 1)
+        XCTAssertEqual("ab\r\ncd".numberOfLines, 2)
         
         let testString = "a\nb c\n\n"
-        XCTAssertEqual(testString.numberOfLines, 3)
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 0, length: 0), includingLastLineEnding: true), 0)   // ""
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 0, length: 1), includingLastLineEnding: true), 1)   // "a"
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 0, length: 2), includingLastLineEnding: true), 2)   // "a\n"
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 0, length: 2), includingLastLineEnding: false), 1)  // "a\n"
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 0, length: 6), includingLastLineEnding: true), 3)   // "a\nb c\n"
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 0, length: 7), includingLastLineEnding: true), 4)   // "a\nb c\n\n"
-        XCTAssertEqual(testString.numberOfLines(in: NSRange(location: 2, length: 4), includingLastLineEnding: false), 1)  // "b c\n"
+        XCTAssertEqual(testString.numberOfLines, 4)
+        XCTAssertEqual(testString.numberOfLines(in: NSRange(0..<0)), 0)   // ""
+        XCTAssertEqual(testString.numberOfLines(in: NSRange(0..<1)), 1)   // "a"
+        XCTAssertEqual(testString.numberOfLines(in: NSRange(0..<2)), 2)   // "a\n"
+        XCTAssertEqual(testString.numberOfLines(in: NSRange(0..<6)), 3)   // "a\nb c\n"
+        XCTAssertEqual(testString.numberOfLines(in: NSRange(0..<7)), 4)   // "a\nb c\n\n"
         
         XCTAssertEqual(testString.lineNumber(at: 0), 1)
         XCTAssertEqual(testString.lineNumber(at: 1), 1)
@@ -84,6 +119,23 @@ class StringExtensionsTests: XCTestCase {
         XCTAssertEqual(testString.lineNumber(at: 5), 2)
         XCTAssertEqual(testString.lineNumber(at: 6), 3)
         XCTAssertEqual(testString.lineNumber(at: 7), 4)
+        
+        let nsString = testString as NSString
+        XCTAssertEqual(nsString.lineNumber(at: 0), testString.lineNumber(at: 0))
+        XCTAssertEqual(nsString.lineNumber(at: 1), testString.lineNumber(at: 1))
+        XCTAssertEqual(nsString.lineNumber(at: 2), testString.lineNumber(at: 2))
+        XCTAssertEqual(nsString.lineNumber(at: 5), testString.lineNumber(at: 5))
+        XCTAssertEqual(nsString.lineNumber(at: 6), testString.lineNumber(at: 6))
+        XCTAssertEqual(nsString.lineNumber(at: 7), testString.lineNumber(at: 7))
+        
+        XCTAssertEqual("\u{FEFF}".numberOfLines(in: NSRange(0..<1)), 1)  // "\u{FEFF}"
+        XCTAssertEqual("\u{FEFF}\nb".numberOfLines(in: NSRange(0..<3)), 2)  // "\u{FEFF}\nb"
+        XCTAssertEqual("a\u{FEFF}\nb".numberOfLines(in: NSRange(1..<4)), 2)  // "\u{FEFF}\nb"
+        XCTAssertEqual("a\u{FEFF}\u{FEFF}\nb".numberOfLines(in: NSRange(1..<5)), 2)  // "\u{FEFF}\nb"
+        
+        XCTAssertEqual("a\u{FEFF}\nb".numberOfLines, 2)
+        XCTAssertEqual("\u{FEFF}\nb".numberOfLines, 2)
+        XCTAssertEqual("\u{FEFF}0000000000000000".numberOfLines, 1)
     }
     
     
@@ -92,14 +144,18 @@ class StringExtensionsTests: XCTestCase {
         XCTAssertEqual("AbcDefg Hij".snakecased, "abc_defg hij")
         XCTAssertEqual("abcDefg Hij".snakecased, "abc_defg hij")
         XCTAssertEqual("_abcDefg Hij".snakecased, "_abc_defg hij")
+        XCTAssertEqual("AA\u{0308}".snakecased, "a_a\u{0308}")
+        XCTAssertEqual("abÄb".snakecased, "ab_äb")
         
         XCTAssertEqual("abc_defg Hij".camelcased, "abcDefg hij")
         XCTAssertEqual("AbcDefg Hij".camelcased, "abcDefg hij")
         XCTAssertEqual("_abcDefg Hij".camelcased, "_abcDefg hij")
+        XCTAssertEqual("a_a\u{0308}".camelcased, "aA\u{0308}")
         
         XCTAssertEqual("abc_defg Hij".pascalcased, "AbcDefg Hij")
         XCTAssertEqual("abcDefg Hij".pascalcased, "AbcDefg Hij")
         XCTAssertEqual("_abcDefg Hij".pascalcased, "_abcDefg Hij")
+        XCTAssertEqual("a_a\u{0308}".pascalcased, "AA\u{0308}")
     }
     
     
@@ -107,73 +163,69 @@ class StringExtensionsTests: XCTestCase {
         
         let testString = "犬 イヌ いぬ Ｉｎｕ Dog 123 １２３"
         
-        XCTAssertEqual(testString.fullWidthRoman, "犬 イヌ いぬ Ｉｎｕ Ｄｏｇ １２３ １２３")
-        XCTAssertEqual(testString.halfWidthRoman, "犬 イヌ いぬ Inu Dog 123 123")
+        XCTAssertEqual(testString.fullwidthRoman(reverse: false), "犬 イヌ いぬ Ｉｎｕ Ｄｏｇ １２３ １２３")
+        XCTAssertEqual(testString.fullwidthRoman(reverse: true), "犬 イヌ いぬ Inu Dog 123 123")
     }
     
     
-    func testRange() {
+    func testBeforeAfterIndex() {
         
-        let string = "0123456789"
+        XCTAssertEqual(("00" as NSString).index(before: 0), 0)
+        XCTAssertEqual(("00" as NSString).index(before: 1), 0)
+        XCTAssertEqual(("00" as NSString).index(before: 2), 1)
+        XCTAssertEqual(("0🇦🇦00" as NSString).index(before: 1), 0)
+        XCTAssertEqual(("0🇦🇦00" as NSString).index(before: 2), 1)
+        XCTAssertEqual(("0🇦🇦00" as NSString).index(before: 5), 1)
+        XCTAssertEqual(("0🇦🇦00" as NSString).index(before: 6), 5)
         
-        XCTAssertEqual(string.range(location: 2, length: 2), NSRange(location: 2, length: 2))
-        XCTAssertEqual(string.range(location: -1, length: 1), NSRange(location: 9, length: 1))
-        XCTAssertEqual(string.range(location: 3, length: -2), NSRange(location: 3, length: "45678".utf16.count))
-    }
-        
-        
-    func testRangeForLine() {
-        
-        let string = "1\r\n2\r\n3\r\n4"  // 1 based
-        var range: NSRange
-        
-        range = string.rangeForLine(location: 1, length: 2)!
-        XCTAssertEqual((string as NSString).substring(with: range), "1\r\n2\r\n")
-        
-        range = string.rangeForLine(location: 4, length: 1)!
-        XCTAssertEqual((string as NSString).substring(with: range), "4")
-        
-        range = string.rangeForLine(location: 3, length: 0)!
-        XCTAssertEqual((string as NSString).substring(with: range), "3\r\n")
-
-        range = string.rangeForLine(location: -1, length: 1)!
-        XCTAssertEqual((string as NSString).substring(with: range), "4")
-
-        range = string.rangeForLine(location: -2, length: 1)!
-        XCTAssertEqual((string as NSString).substring(with: range), "3\r\n")
-
-        range = string.rangeForLine(location: 2, length: -2)!
-        XCTAssertEqual((string as NSString).substring(with: range), "2\r\n")
+        XCTAssertEqual(("00" as NSString).index(after: 0), 1)
+        XCTAssertEqual(("00" as NSString).index(after: 1), 2)
+        XCTAssertEqual(("00" as NSString).index(after: 2), 2)
+        XCTAssertEqual(("0🇦🇦0" as NSString).index(after: 0), 1)
+        XCTAssertEqual(("0🇦🇦0" as NSString).index(after: 1), 5)
     }
     
     
     func testLineRange() {
         
-        let string = "foo\nbar\n"
+        let string = "foo\n\rbar\n\r"
         
-        XCTAssertEqual(string.lineRange(for: string.startIndex..<string.endIndex, excludingLastLineEnding: true),
+        XCTAssertEqual(string.lineContentsRange(for: string.startIndex..<string.endIndex),
                        string.startIndex..<string.index(before: string.endIndex))
         
-        XCTAssertEqual(string.lineRange(for: string.startIndex..<string.index(after: string.startIndex)),
+        XCTAssertEqual(string.lineRange(at: string.index(after: string.startIndex)),
                        string.startIndex..<string.index(string.startIndex, offsetBy: 4))
-        XCTAssertEqual(string.lineRange(for: string.startIndex..<string.index(after: string.startIndex), excludingLastLineEnding: true),
+        XCTAssertEqual(string.lineContentsRange(for: string.startIndex..<string.index(after: string.startIndex)),
                        string.startIndex..<string.index(string.startIndex, offsetBy: 3))
+        
+        XCTAssertEqual((string as NSString).lineContentsRange(for: NSRange(..<1)), NSRange(..<3))
+        XCTAssertEqual((string as NSString).lineContentsRange(at: 5), NSRange(5..<8))
         
         let emptyString = ""
         let emptyRange = emptyString.startIndex..<emptyString.endIndex
         
-        XCTAssertEqual(emptyString.lineRange(for: emptyRange, excludingLastLineEnding: true), emptyRange)
+        XCTAssertEqual(emptyString.lineContentsRange(for: emptyRange), emptyRange)
     }
     
     
-    func testRangeOfCharacters() {
+    func testLineRanges() {
         
-        let set = CharacterSet(charactersIn: "._").inverted
-        let string = "abc.d🐕f_ghij"
+        XCTAssertEqual("foo\nbar".lineContentsRanges(for: NSRange(1..<1)), [NSRange(1..<1)])
+        XCTAssertEqual("foo\nbar".lineContentsRanges(), [NSRange(0..<3), NSRange(4..<7)])
+        XCTAssertEqual("foo\nbar\n".lineContentsRanges(), [NSRange(0..<3), NSRange(4..<7)])
+        XCTAssertEqual("foo\r\nbar".lineContentsRanges(), [NSRange(0..<3), NSRange(5..<8)])
+        XCTAssertEqual("foo\r\r\rbar".lineContentsRanges().count, 4)
+    }
+    
+    
+    func testRangeOfCharacter() {
         
-        XCTAssertEqual(string[string.rangeOfCharacters(from: set, at: string.startIndex)!], "abc")
-        XCTAssertEqual(string[string.rangeOfCharacters(from: set, at: string.index(string.startIndex, offsetBy: 4))!], "d🐕f")
-        XCTAssertEqual(string[string.rangeOfCharacters(from: set, at: string.index(before: string.endIndex))!], "ghij")
+        let set = CharacterSet(charactersIn: "._")
+        let string = "abc.d🐕f_ghij" as NSString
+        
+        XCTAssertEqual(string.substring(with: string.rangeOfCharacter(until: set, at: 0)), "abc")
+        XCTAssertEqual(string.substring(with: string.rangeOfCharacter(until: set, at: 4)), "d🐕f")
+        XCTAssertEqual(string.substring(with: string.rangeOfCharacter(until: set, at: string.length - 1)), "ghij")
     }
     
     
@@ -216,7 +268,7 @@ class StringExtensionsTests: XCTestCase {
             """
         XCTAssertEqual(trimmedIgnoringEmptyLines, expectedTrimmedIgnoringEmptyLines)
     }
-
+    
 }
 
 

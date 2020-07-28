@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2015-2018 1024jp
+//  © 2015-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ final class TextFindProgress: Progress {
     private let format: CountableFormatter
     
     
+    
     // MARK: -
     // MARK: Lifecycle
     
@@ -42,17 +43,17 @@ final class TextFindProgress: Progress {
         super.init(parent: nil, userInfo: nil)
         
         self.totalUnitCount = Int64(totalUnitCount)
-        self.localizedDescription = self.format.localizedString(for: 0)
     }
+    
     
     
     // MARK: Progress Methods
     
-    override var completedUnitCount: Int64 {
+    override var localizedDescription: String! {
         
-        didSet {
-            self.localizedDescription = self.format.localizedString(for: Int(completedUnitCount))
-        }
+        // -> KVO is sacrificed for the performance.
+        get { self.format.localizedString(for: Int(self.completedUnitCount)) }
+        set { _ = newValue }
     }
     
 }
@@ -63,26 +64,15 @@ final class TextFindProgress: Progress {
 
 struct CountableFormatter {
     
-    static let find = CountableFormatter(singular: "%@ string found.", plural: "%@ strings found.")
-    static let replacement = CountableFormatter(singular: "%@ string replaced.", plural: "%@ strings replaced.")
+    static let find = CountableFormatter(singular: "%li string found.", plural: "%li strings found.")
+    static let replacement = CountableFormatter(singular: "%li string replaced.", plural: "%li strings replaced.")
     
-    
-    
-    // MARK: Public Properties
-    
-    let singular: String
-    let plural: String
     
     
     // MARK: Private Properties
     
-    private let integerFormatter: NumberFormatter = {
-        
-        let formatter = NumberFormatter()
-        formatter.usesGroupingSeparator = true
-        formatter.numberStyle = .decimal
-        return formatter
-    }()
+    private let singular: String
+    private let plural: String
     
     
     
@@ -90,8 +80,7 @@ struct CountableFormatter {
     
     fileprivate func localizedString(for count: Int) -> String {
         
-        return String(format: self.format(for: count).localized,
-                      self.integerFormatter.string(from: count as NSNumber)!)
+        return String(format: self.format(for: count).localized, locale: .current, count)
     }
     
     
@@ -101,12 +90,12 @@ struct CountableFormatter {
     private func format(for count: Int) -> String {
         
         switch count {
-        case 0:
-            return "Searching in text…".localized
-        case 1:
-            return self.singular
-        default:
-            return self.plural
+            case 0:
+                return "Searching in text…"
+            case 1:
+                return self.singular
+            default:
+                return self.plural
         }
     }
     

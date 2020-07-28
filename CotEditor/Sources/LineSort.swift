@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2018 1024jp
+//  © 2018-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -47,22 +47,20 @@ extension SortPattern {
         
         var lines = string.components(separatedBy: .newlines)
         let firstLine = options.keepsFirstLine ? lines.removeFirst() : nil
-            
+        
         lines = lines
-            .map { line -> (line: String, key: String?) in
-                (line: line, key: self.sortKey(for: line))
-            }
+            .map { (line: $0, key: self.sortKey(for: $0)) }
             .sorted {
                 switch ($0.key, $1.key) {
-                case let (.some(key0), .some(key1)):
-                    return key0.compare(key1, options: compareOptions, locale: options.locale) == .orderedAscending
-                case (.none, .some):
-                    return false
-                case (.some, .none), (.none, .none):
-                    return true
+                    case let (.some(key0), .some(key1)):
+                        return key0.compare(key1, options: compareOptions, locale: options.locale) == .orderedAscending
+                    case (.none, .some):
+                        return false
+                    case (.some, .none), (.none, .none):
+                        return true
                 }
             }
-            .map { $0.line }
+            .map(\.line)
         
         if options.decending {
             lines.reverse()
@@ -108,6 +106,8 @@ final class CSVSortPattern: NSObject, SortPattern {
     
     func sortKey(for line: String) -> String? {
         
+        assert(self.column > 0)
+        
         let delimiter = self.delimiter.isEmpty ? "," : self.delimiter.unescaped
         let index = self.column - 1  // column number is 1-based
         
@@ -118,34 +118,25 @@ final class CSVSortPattern: NSObject, SortPattern {
     
     func range(for line: String) -> Range<String.Index>? {
         
+        assert(self.column > 0)
+        
         let delimiter = self.delimiter.isEmpty ? "," : self.delimiter.unescaped
+        let index = self.column - 1  // column number is 1-based
         let components = line.components(separatedBy: delimiter)
         
-        guard components.count >= self.column else { return nil }
+        guard let component = components[safe: index] else { return nil }
         
-        var start = line.startIndex
-        var end = line.endIndex
-        var range = start..<end
-        for (index, component) in components.enumerated() {
-            guard index != self.column else { break }
-            
-            if index > 0 {
-                start = line.index(end, offsetBy: delimiter.count)
-            }
-            end = line.index(start, offsetBy: component.count)
-            
-            range = start..<end
-            if let trimmedStart = component.firstIndex(where: { $0 != " " }) {
-                let offset = component.distance(from: component.startIndex, to: trimmedStart)
-                range = line.index(start, offsetBy: offset)..<range.upperBound
-            }
-            if let trimmedEnd = component.lastIndex(where: { $0 != " " }) {
-                let offset = component.distance(from: component.startIndex, to: trimmedEnd)
-                range = range.lowerBound..<line.index(start, offsetBy: offset)
-            }
-        }
+        let offset = components[..<index].map { $0 + delimiter }.joined().count
+        let start = line.index(line.startIndex, offsetBy: offset)
+        let end = line.index(start, offsetBy: component.count)
         
-        return range
+        // trim whitespaces
+        let headTrim = component.countPrefix(while: \.isWhitespace)
+        let endTrim = component.reversed().countPrefix(while: \.isWhitespace)
+        let trimmedStart = line.index(start, offsetBy: headTrim)
+        let trimmedEnd = line.index(end, offsetBy: -endTrim)
+        
+        return trimmedStart..<trimmedEnd
     }
     
     
@@ -187,9 +178,9 @@ final class RegularExpressionSortPattern: NSObject, SortPattern {
         
         if self.usesCaptureGroup {
             guard match.numberOfRanges > self.group else { return nil }
-            return Range(match.range(at: self.group), in: line)!
+            return Range(match.range(at: self.group), in: line)
         } else {
-            return Range(match.range, in: line)!
+            return Range(match.range, in: line)
         }
     }
     

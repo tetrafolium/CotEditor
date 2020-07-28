@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2019 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -23,14 +23,20 @@
 //  limitations under the License.
 //
 
-import Foundation
+import Foundation.NSString
 
-extension StringProtocol where Self.Index == String.Index {
+extension String {
     
-    /// whole range in NSRange
+    /// Whole range in NSRange.
     var nsRange: NSRange {
         
-        return NSRange(..<self.endIndex, in: self)
+        return NSRange(location: 0, length: (self as NSString).length)
+    }
+    
+    
+    var length: Int {
+        
+        return self.utf16.count
     }
     
 }
@@ -42,6 +48,13 @@ extension NSRange {
     static let notFound = NSRange(location: NSNotFound, length: 0)
     
     
+    /// A boolean value indicating whether the range contains no elements.
+    var isEmpty: Bool {
+        
+        return (self.length == 0)
+    }
+    
+    
     /// Check if the given index is in the receiver or touchs to one of the receiver's bounds.
     ///
     /// - Parameter index: The index to test.
@@ -50,6 +63,14 @@ extension NSRange {
         return self.lowerBound <= index && index <= self.upperBound
     }
     
+    
+    /// Return a boolean indicating whether the specified range intersects the receiver’s range.
+    ///
+    /// - Parameter other: The other range.
+    func intersects(_ other: NSRange) -> Bool {
+        
+        return self.intersection(other) != nil
+    }
     
     
     /// Check if the two ranges overlap or touch each other.
@@ -66,12 +87,23 @@ extension NSRange {
         return true
     }
     
+    
+    /// Return a copied NSRange but whose location is shifted toward the given `offset`.
+    ///
+    /// - Parameter offset: The offset to shift.
+    /// - Returns: A new NSRange.
+    func shifted(offset: Int) -> NSRange {
+        
+        return NSRange(location: self.location + offset, length: self.length)
+    }
+    
 }
 
 
 
 extension NSString {
     
+    /// Whole range in NSRange
     var range: NSRange {
         
         return NSRange(location: 0, length: self.length)
@@ -88,9 +120,7 @@ extension NSString {
         
         guard location > 0 else { return 0 }
         
-        let range = NSRange(location: location - 1, length: 0)
-        
-        return self.rangeOfComposedCharacterSequences(for: range).lowerBound
+        return self.rangeOfComposedCharacterSequence(at: location - 1).lowerBound
     }
     
     
@@ -104,9 +134,7 @@ extension NSString {
         
         guard location < self.length else { return self.length }
         
-        let range = NSRange(location: location + 1, length: 0)
-        
-        return self.rangeOfComposedCharacterSequences(for: range).lowerBound
+        return self.rangeOfComposedCharacterSequence(at: location).upperBound
     }
     
     
@@ -137,25 +165,59 @@ extension NSString {
     
     
     /// line range containing a given location
-    func lineRange(at location: Int, excludingLastLineEnding: Bool = false) -> NSRange {
+    func lineRange(at location: Int) -> NSRange {
         
-        return self.lineRange(for: NSRange(location: location, length: 0), excludingLastLineEnding: excludingLastLineEnding)
+        return self.lineRange(for: NSRange(location: location, length: 0))
     }
     
     
-    /// line range adding ability to exclude last line ending character if exists
-    func lineRange(for range: NSRange, excludingLastLineEnding: Bool) -> NSRange {
+    /// line range containing a given location
+    func lineContentsRange(at location: Int) -> NSRange {
         
-        var lineRange = self.lineRange(for: range)
+        return self.lineContentsRange(for: NSRange(location: location, length: 0))
+    }
+    
+    
+    /// Return line range excluding last line ending character if exists.
+    ///
+    /// - Parameters:
+    ///   - range: A range within the receiver.
+    /// - Returns: The range of characters representing the line or lines containing a given range.
+    func lineContentsRange(for range: NSRange) -> NSRange {
         
-        guard excludingLastLineEnding else { return lineRange }
+        var start = 0
+        var contentsEnd = 0
+        self.getLineStart(&start, end: nil, contentsEnd: &contentsEnd, for: range)
         
-        // ignore last line ending
-        if lineRange.length > 0, self.character(at: lineRange.upperBound - 1) == "\n".utf16.first! {
-            lineRange.length -= 1
-        }
+        return NSRange(location: start, length: contentsEnd - start)
+    }
+    
+    
+    /// Return the index of the first character of the line touched by the given index.
+    ///
+    /// - Parameters:
+    ///   - index: The index of character for finding the line start.
+    /// - Returns: The character index of the nearest line start.
+    func lineStartIndex(at index: Int) -> Int {
         
-        return lineRange
+        var start = 0
+        self.getLineStart(&start, end: nil, contentsEnd: nil, for: NSRange(location: index, length: 0))
+        
+        return start
+    }
+    
+    
+    /// Return the index of the last character before the line ending of the line touched by the given index.
+    ///
+    /// - Parameters:
+    ///   - index: The index of character for finding the line contents end.
+    /// - Returns: The character index of the nearest line contents end.
+    func lineContentsEndIndex(at index: Int) -> Int {
+        
+        var contentsEnd = 0
+        self.getLineStart(nil, end: nil, contentsEnd: &contentsEnd, for: NSRange(location: index, length: 0))
+        
+        return contentsEnd
     }
     
     
@@ -171,7 +233,8 @@ extension NSString {
         
         if includingLastEmptyLine,
             ranges == [NSRange(location: self.length, length: 0)],
-            (self.length == 0 || self.character(at: self.length - 1) == "\n".utf16.first!) {
+            (self.length == 0 || self.character(at: self.length - 1).isNewline)
+        {
             return ranges
         }
         
@@ -183,12 +246,80 @@ extension NSString {
             
             // store each line to process
             self.enumerateSubstrings(in: linesRange, options: [.byLines, .substringNotRequired]) { (_, _, enclosingRange, _) in
-                
                 lineRanges.append(enclosingRange)
             }
         }
         
         return lineRanges.array
+    }
+    
+    
+    /// Fast way to count the number of lines at the character index (1-based).
+    ///
+    /// Counting in this way is significantly faster than other ways such as `enumerateSubstrings(in:options:.byLines)`,
+    /// `components(separatedBy: .newlines)`, or even just counting `\n` in `.utf16`. (2020-02, Swift 5.1)
+    ///
+    /// - Parameter location: NSRange-based character index.
+    /// - Returns: The number of lines (1-based).
+    func lineNumber(at location: Int) -> Int {
+        
+        assert(location == 0 || location <= self.length)
+        
+        guard self.length > 0, location > 0 else { return 1 }
+        
+        var count = 0
+        var index = 0
+        while index < location {
+            self.getLineStart(nil, end: &index, contentsEnd: nil, for: NSRange(location: index, length: 0))
+            count += 1
+        }
+        
+        if self.character(at: location - 1).isNewline {
+            count += 1
+        }
+        
+        return count
+    }
+    
+    
+    /// Find the widest character range that contains the given `index` and not contains given character set.
+    ///
+    /// - Parameters:
+    ///   - set: The character set to end expanding range.
+    ///   - index: The index of character to be contained to the result range. `index` must be within `range`.
+    ///   - range: The range in which to search. `range` must not exceed the bounds of the receiver.
+    /// - Returns: The found character range.
+    func rangeOfCharacter(until set: CharacterSet, at index: Int, range: NSRange? = nil) -> NSRange {
+        
+        let range = range ?? self.range
+        
+        assert(range.contains(index))
+        
+        let lowerDelimiterRange = self.rangeOfCharacter(from: set, options: .backwards, range: NSRange(range.lowerBound..<index))
+        let lowerBound = (lowerDelimiterRange != .notFound) ? lowerDelimiterRange.upperBound : range.lowerBound
+        
+        let upperDelimiterRange = self.rangeOfCharacter(from: set, range: NSRange(index..<range.upperBound))
+        let upperBound = (upperDelimiterRange != .notFound) ? upperDelimiterRange.lowerBound : range.upperBound
+        
+        return NSRange(lowerBound..<upperBound)
+    }
+    
+}
+
+
+extension unichar {
+    
+    /// A Boolean value indicating whether this character represents a newline.
+    ///
+    /// cf. <https://developer.apple.com/documentation/swift/character/3127014-isnewline>
+    var isNewline: Bool {
+        
+        switch self {
+            case 0x000A, 0x000B, 0x000C, 0x000D, 0x0085, 0x2028, 0x2029:
+                return true
+            default:
+                return false
+        }
     }
     
 }

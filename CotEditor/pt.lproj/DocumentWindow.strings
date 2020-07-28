@@ -9,7 +9,7 @@
 // 
 // ------------------------------------------------------------------------------
 // 
-// © 2018-2019 CotEditor Project
+// © 2018-2020 CotEditor Project
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,13 +85,10 @@
 /* Class = "NSSegmentedCell"; ObjectID = "lad-Dh-atP"; */
 "lad-Dh-atP.ibShadowedToolTips[0]" = "Da Esquerda para a Direita";  // "Left to Right"
 "lad-Dh-atP.ibShadowedToolTips[1]" = "Da Direita para a Esquerda";  // "Right to Left"
-"lad-Dh-atP.ibShadowedToolTips[2]" = "Vertical";  // "Vertical"
 /* Class = "NSMenuItem"; title = "Left to Right"; ObjectID = "Tul-RE-xpJ"; */
 "Tul-RE-xpJ.title" = "Da Esquerda para a Direita";
 /* Class = "NSMenuItem"; title = "Right to Left"; ObjectID = "7iT-zZ-mIj"; */
 "7iT-zZ-mIj.title" = "Da Direita para a Esquerda";
-/* Class = "NSMenuItem"; title = "Vertical"; ObjectID = "5v4-ft-RRo"; */
-"5v4-ft-RRo.title" = "Vertical";
 
 /* Class = "NSToolbarItem"; label = "Text Orientation"; ObjectID = "1cW-FV-40L"; */
 "1cW-FV-40L.label" = "Orientação";  /* Text Orientation */
@@ -150,10 +147,15 @@
 "GS6-aA-mgz.paletteLabel" = "Guia da Página";  /* Page Guide */
 "GS6-aA-mgz.toolTip" = "Mostre ou oculte a linha de guia da página";  /* Show or hide page guide line */
 
+/* Class = "NSToolbarItem"; ObjectID = "95y-zI-oqM"; */
+"95y-zI-oqM.label" = "Guias de Recuo";  /* Indent Guides */
+"95y-zI-oqM.paletteLabel" = "Guias de Recuo";  /* Indent Guides */
+"95y-zI-oqM.toolTip" = "Mostrar ou ocultar linhas de guia de recuo";  /* Show or hide indent guide lines */
+
 /* Class = "NSToolbarItem"; ObjectID = "LYl-ty-usA"; */
 "LYl-ty-usA.label" = "Opacidade";  /* Opacity */
 "LYl-ty-usA.paletteLabel" = "Opacidade";  /* Opacity */
-"LYl-ty-usA.toolTip" = "Altere Opacidade do Editor";  /* Change editor’s opacity */
+"LYl-ty-usA.toolTip" = "Altere a opacidade do editor";  /* Change editor’s opacity */
 
 /* Class = "NSToolbarItem"; label = "Spell Check"; ObjectID = "Ply-Nr-aOE"; */
 "Ply-Nr-aOE.label" = "Verificar Ortografia";  /* Spell Check */

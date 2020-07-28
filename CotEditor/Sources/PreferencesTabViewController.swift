@@ -127,7 +127,7 @@ private extension PreferencesTabViewController {
         "Key Bindings": "b8q-WN-1ls",
         "Print": "UuB-iq-kOt",
         "Integration": "gEv-qP-tRM",
-        ]
+    ]
     
     
     /// localize tabViewItems using storyboard's .string
@@ -136,7 +136,7 @@ private extension PreferencesTabViewController {
         for item in self.tabViewItems {
             guard
                 let identifier = item.identifier as? String,
-                let ibIdentifier = type(of: self).ibIdentifiers[identifier]
+                let ibIdentifier = Self.ibIdentifiers[identifier]
                 else { assertionFailure(); continue }
             
             let key = ibIdentifier + ".label"

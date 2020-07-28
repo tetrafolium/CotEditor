@@ -9,7 +9,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -27,32 +27,24 @@
 import XCTest
 @testable import CotEditor
 
-let themeDirectoryName = "Themes"
 
-
-class ThemeTests: XCTestCase {
+final class ThemeTests: XCTestCase {
     
-    var bundle: Bundle?
+    private let themeDirectoryName = "Themes"
+    
+    private lazy var bundle = Bundle(for: type(of: self))
     
     
-    override func setUp() {
-        
-        super.setUp()
-        
-        self.bundle = Bundle(for: type(of: self))
-    }
-    
-
     func testDefaultTheme() throws {
         
         let themeName = "Dendrobates"
         let theme = try self.loadThemeWithName(themeName)!
         
         XCTAssertEqual(theme.name, themeName)
-        XCTAssertEqual(theme.text.color, NSColor.black.usingColorSpaceName(.calibratedRGB))
-        XCTAssertEqual(theme.insertionPoint.color, NSColor.black.usingColorSpaceName(.calibratedRGB))
+        XCTAssertEqual(theme.text.color, NSColor.black.usingColorSpace(.genericRGB))
+        XCTAssertEqual(theme.insertionPoint.color, NSColor.black.usingColorSpace(.genericRGB))
         XCTAssertEqual(theme.invisibles.color.brightnessComponent, 0.72, accuracy: 0.01)
-        XCTAssertEqual(theme.background.color, NSColor.white.usingColorSpaceName(.calibratedRGB))
+        XCTAssertEqual(theme.background.color, NSColor.white.usingColorSpace(.genericRGB))
         XCTAssertEqual(theme.lineHighlight.color.brightnessComponent, 0.94, accuracy: 0.01)
         XCTAssertNil(theme.secondarySelectionColor)
         
@@ -77,24 +69,27 @@ class ThemeTests: XCTestCase {
     /// test if all of bundled themes are valid
     func testBundledThemes() throws {
         
-        let themeDirectoryURL = self.bundle?.url(forResource: themeDirectoryName, withExtension: nil)!
-        let enumerator = FileManager.default.enumerator(at: themeDirectoryURL!, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])!
+        let themeDirectoryURL = self.bundle.url(forResource: themeDirectoryName, withExtension: nil)!
+        let enumerator = FileManager.default.enumerator(at: themeDirectoryURL, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsHiddenFiles])!
         
         for case let url as URL in enumerator {
             guard DocumentType.theme.extensions.contains(url.pathExtension) else { continue }
             
-            _ = try Theme(contentsOf: url)
+            _ = try Theme.theme(contentsOf: url)
         }
     }
     
-    
-    // MARK: Private Methods
+}
+
+
+
+private extension ThemeTests {
     
     func loadThemeWithName(_ name: String) throws -> Theme? {
         
-        let url = self.bundle?.url(forResource: name, withExtension: DocumentType.theme.extensions[0], subdirectory: themeDirectoryName)
+        let url = self.bundle.url(forResource: name, withExtension: DocumentType.theme.extensions[0], subdirectory: themeDirectoryName)
         
-        return try Theme(contentsOf: url!)
+        return try Theme.theme(contentsOf: url!)
     }
-
+    
 }

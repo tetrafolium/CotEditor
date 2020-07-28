@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2016-2018 1024jp
+//  © 2016-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ extension EditorTextView {
             self.initialMagnificationScale = self.scale
         }
         
-        var scale = self.scale + event.magnification
+        var scale = self.scale * (1 + event.magnification)
         let center = self.convert(event.locationInWindow, from: nil)
         
         // hold a bit at scale 1.0
@@ -84,12 +84,12 @@ extension EditorTextView {
     @IBAction func changeTextSize(_ sender: NSSegmentedControl) {
         
         switch sender.selectedSegment {
-        case 0:
-            self.smallerFont(sender)
-        case 1:
-            self.biggerFont(sender)
-        default:
-            assertionFailure("Segmented text size button must have 3 segments only.")
+            case 0:
+                self.smallerFont(sender)
+            case 1:
+                self.biggerFont(sender)
+            default:
+                assertionFailure("Segmented text size button must have 2 segments only.")
         }
     }
     
@@ -117,8 +117,6 @@ extension EditorTextView {
         
         self.font = font
         self.setScaleKeepingVisibleArea(1.0)
-        
-        self.setNeedsDisplay(self.visibleRect, avoidAdditionalLayout: true)
     }
     
 }

@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -25,40 +25,61 @@
 
 import Foundation
 
-extension StringProtocol where Self.Index == String.Index {
+extension StringProtocol where Index == String.Index {
     
-    /// number of lines in the whole string ignoring the last new line character
-    var numberOfLines: Int {
+    /// The number of words in the whole string.
+    var numberOfWords: Int {
         
-        return self.numberOfLines(in: self.startIndex..<self.endIndex, includingLastLineEnding: false)
+        var count = 0
+        self.enumerateSubstrings(in: self.startIndex..<self.endIndex, options: [.byWords, .localized, .substringNotRequired]) { (_, _, _, _) in
+            count += 1
+        }
+        
+        return count
     }
     
     
-    /// count the number of lines at the character index (1-based).
-    func lineNumber(at index: Self.Index) -> Int {
+    /// The number of lines in the whole string including the last blank line.
+    var numberOfLines: Int {
+        
+        return self.numberOfLines()
+    }
+    
+    
+    /// Calculate the line number at the given character index (1-based).
+    ///
+    /// - Parameter index: The character index.
+    /// - Returns: The line number.
+    func lineNumber(at index: Index) -> Int {
         
         guard !self.isEmpty, index > self.startIndex else { return 1 }
         
-        return self.numberOfLines(in: self.startIndex..<index, includingLastLineEnding: true)
+        return self.numberOfLines(in: self.startIndex..<index)
     }
     
     
-    /// count the number of lines in the range
-    func numberOfLines(in range: Range<String.Index>? = nil, includingLastLineEnding: Bool) -> Int {
+    /// Count the number of lines in the given range including the last blank line.
+    ///
+    /// - Parameter range: The character range to count lines, or when `nil`, the entire range.
+    /// - Returns: The number of lines.
+    func numberOfLines(in range: Range<String.Index>? = nil) -> Int {
         
         let range = range ?? self.startIndex..<self.endIndex
         
-        guard !self.isEmpty, !range.isEmpty else { return 0 }
+        if self.isEmpty || range.isEmpty { return 0 }
+        
+        // workarond for a bug since Swift 5 that removes BOM at the beginning (2019-05 Swift 5.1).
+        // cf. https://bugs.swift.org/browse/SR-10896
+        guard !self.starts(with: "\u{FEFF}") || self.compareCount(with: 16) == .greater else {
+            return self[range].count { $0.isNewline } + 1
+        }
         
         var count = 0
         self.enumerateSubstrings(in: range, options: [.byLines, .substringNotRequired]) { (_, _, _, _) in
             count += 1
         }
         
-        if includingLastLineEnding,
-            let last = self[range].unicodeScalars.last,
-            CharacterSet.newlines.contains(last)
-        {
+        if self[range].last?.isNewline == true {
             count += 1
         }
         
@@ -73,21 +94,38 @@ extension StringProtocol where Self.Index == String.Index {
 
 extension String {
     
-    /// count the number of lines at the character index (1-based).
+    /// Calculate the line number at the given character index (1-based).
+    ///
+    /// - Parameter location: The UTF16-baesd character index.
+    /// - Returns: The line number.
     func lineNumber(at location: Int) -> Int {
         
         guard !self.isEmpty, location > 0 else { return 1 }
         
-        return self.numberOfLines(in: NSRange(0..<location), includingLastLineEnding: true)
+        return self.numberOfLines(in: NSRange(location: 0, length: location))
     }
     
     
-    /// count the number of lines in the range
-    func numberOfLines(in range: NSRange, includingLastLineEnding: Bool) -> Int {
+    /// Count the number of lines in the given range including the last blank line.
+    ///
+    /// - Parameter range: The character range to count lines, or when `nil`, the entire range.
+    /// - Returns: The number of lines.
+    func numberOfLines(in range: NSRange? = nil) -> Int {
         
-        guard let characterRange = Range(range, in: self) else { return 0 }
+        let range = range ?? self.nsRange
         
-        return self.numberOfLines(in: characterRange, includingLastLineEnding: includingLastLineEnding)
+        if self.isEmpty || range.isEmpty { return 0 }
+        
+        var count = 0
+        (self as NSString).enumerateSubstrings(in: range, options: [.byLines, .substringNotRequired]) { (_, _, _, _) in
+            count += 1
+        }
+        
+        if (self as NSString).character(at: range.upperBound - 1).isNewline == true {
+            count += 1
+        }
+        
+        return count
     }
     
 }

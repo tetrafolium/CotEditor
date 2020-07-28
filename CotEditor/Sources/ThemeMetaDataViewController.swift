@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2017-2018 1024jp
+//  © 2017-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -39,13 +39,10 @@ final class ThemeMetaDataViewController: NSViewController {
     @IBAction func jumpToURL(_ sender: Any?) {
         
         guard
-            let theme = self.representedObject as? ThemeManager.ThemeDictionary,
-            let address = theme[DictionaryKey.metadata.rawValue]?[MetadataKey.distributionURL.rawValue] as? String,
+            let theme = self.representedObject as? Theme,
+            let address = theme.metadata?.distributionURL,
             let url = URL(string: address)
-            else {
-                NSSound.beep()
-                return
-        }
+            else { return NSSound.beep() }
         
         NSWorkspace.shared.open(url)
     }
