@@ -2,8 +2,11 @@ inspecode:
   # This repository contains Swift and HTML codes.
 
   cpd:          # supports: C C++ C# Go Java JavaScript Objective-C PHP Python Ruby Scala Swift
-    ignore:
-    - "./Tests/LineSortTests.swift"     # Lexocal error (at EMOJI) in file
+    # ignore:
+    # - "./Tests/LineSortTests.swift"                 # Lexocal error (at EMOJI) in file
+    # - "./CotEditor/Sources/String+Additions.swift"  # Encountered: token recognition error at: '#"'
+    options:
+      --skip-lexical-errors:
     thresholds: { num-issues: 3 }
 
   fossology:
