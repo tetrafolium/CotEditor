@@ -9,7 +9,7 @@
 //  ---------------------------------------------------------------------------
 //
 //  © 2004-2007 nakamuxu
-//  © 2014-2019 1024jp
+//  © 2014-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -24,22 +24,30 @@
 //  limitations under the License.
 //
 
-import Cocoa
+import Foundation
+import AppKit.NSDocument
 
 final class UnixScript: Script {
     
     // MARK: Script Properties
     
-    let descriptor: ScriptDescriptor
+    let url: URL
+    let name: String
+    
+    
+    // MARK: Private Properties
+    
+    private lazy var content: String? = try? String(contentsOf: self.url)
     
     
     
     // MARK: -
     // MARK: Lifecycle
     
-    init(descriptor: ScriptDescriptor) {
+    init(url: URL, name: String) throws {
         
-        self.descriptor = descriptor
+        self.url = url
+        self.name = name
     }
     
     
@@ -71,20 +79,23 @@ final class UnixScript: Script {
     
     // MARK: Script Methods
     
-    /// run script
+    /// Execute the script.
     ///
-    /// - Throws: `ScriptFileError` or Error by `NSUserScriptTask`
-    func run(completionHandler: (() -> Void)? = nil) throws {
+    /// - Parameters:
+    ///   - completionHandler: The completion handler block that returns a script error if any.
+    ///   - error: The `ScriptError` by the script.
+    /// - Throws: `ScriptFileError`
+    func run(completionHandler: @escaping ((_ error: ScriptError?) -> Void)) throws {
         
         // check script file
-        guard self.descriptor.url.isReachable else {
-            throw ScriptFileError(kind: .existance, url: self.descriptor.url)
+        guard self.url.isReachable else {
+            throw ScriptFileError(kind: .existance, url: self.url)
         }
-        guard try self.descriptor.url.resourceValues(forKeys: [.isExecutableKey]).isExecutable ?? false else {
-            throw ScriptFileError(kind: .permission, url: self.descriptor.url)
+        guard try self.url.resourceValues(forKeys: [.isExecutableKey]).isExecutable ?? false else {
+            throw ScriptFileError(kind: .permission, url: self.url)
         }
         guard let script = self.content, !script.isEmpty else {
-            throw ScriptFileError(kind: .read, url: self.descriptor.url)
+            throw ScriptFileError(kind: .read, url: self.url)
         }
         
         // fetch target document
@@ -94,10 +105,11 @@ final class UnixScript: Script {
         let input: String?
         if let inputType = InputType(scanning: script) {
             do {
-                input = try self.readInputString(type: inputType, editor: document)
+                input = try Self.readInput(type: inputType, editor: document)
+            } catch let error as ScriptError {
+                return completionHandler(error)
             } catch {
-                writeToConsole(message: error.localizedDescription, scriptName: self.descriptor.name)
-                return
+                preconditionFailure()
             }
         } else {
             input = nil
@@ -110,9 +122,7 @@ final class UnixScript: Script {
         let arguments: [String] = [document?.fileURL?.path].compactMap { $0 }
         
         // create task
-        let task = try NSUserUnixTask(url: self.descriptor.url)
-        
-        // set pipes
+        let task = try NSUserUnixTask(url: self.url)
         let inPipe = Pipe()
         let outPipe = Pipe()
         let errPipe = Pipe()
@@ -122,60 +132,52 @@ final class UnixScript: Script {
         
         // set input data if available
         if let data = input?.data(using: .utf8) {
-            inPipe.fileHandleForWriting.writeabilityHandler = { (handle: FileHandle) in
+            inPipe.fileHandleForWriting.writeabilityHandler = { (handle) in
                 // write input data chunk by chunk
                 // -> to avoid freeze by a huge input data, whose length is more than 65,536 (2^16).
                 for chunk in data.components(length: 65_536) {
                     handle.write(chunk)
                 }
-                handle.closeFile()
                 
                 // inPipe must avoid releasing before `writeabilityHandler` is invocated
                 inPipe.fileHandleForWriting.writeabilityHandler = nil
             }
         }
         
-        let scriptName = self.descriptor.name
-        var isCancelled = false  // user cancel state
-        
         // read output asynchronously for safe with huge output
-        if let outputType = outputType {
-            weak var observer: NSObjectProtocol?
-            observer = NotificationCenter.default.addObserver(forName: .NSFileHandleReadToEndOfFileCompletion, object: outPipe.fileHandleForReading, queue: .main) { (note: Notification) in
-                NotificationCenter.default.removeObserver(observer!)
-                
-                guard
-                    !isCancelled,
-                    let data = note.userInfo?[NSFileHandleNotificationDataItem] as? Data,
-                    let output = String(data: data, encoding: .utf8)
-                    else { return }
-                
-                do {
-                    try Self.applyOutput(output, editor: document, type: outputType)
-                } catch {
-                    writeToConsole(message: error.localizedDescription, scriptName: scriptName)
-                }
+        var outputData = Data()
+        if outputType != nil {
+            outPipe.fileHandleForReading.readabilityHandler = { (handle) in
+                outputData.append(handle.availableData)
             }
-            outPipe.fileHandleForReading.readToEndOfFileInBackgroundAndNotify()
         }
         
         // execute
-        task.execute(withArguments: arguments) { error in
-            defer {
-                completionHandler?()
+        task.execute(withArguments: arguments) { [weak document, name = self.name] (error) in
+            outPipe.fileHandleForReading.readabilityHandler = nil
+            
+            // on user cancellation
+            if (error as? POSIXError)?.code == .ENOTBLK {
+                return completionHandler(nil)
             }
             
-            // on user cancel
-            if let error = error as? POSIXError, error.code == .ENOTBLK {
-                isCancelled = true
-                return
+            // apply output
+            if let outputType = outputType, let output = String(data: outputData, encoding: .utf8) {
+                DispatchQueue.main.async {
+                    do {
+                        try Self.applyOutput(output, editor: document, type: outputType)
+                    } catch {
+                        Console.shared.show(message: error.localizedDescription, title: name)
+                    }
+                }
             }
             
-            // put error message on the console
+            // obtain standard error
             let errorData = errPipe.fileHandleForReading.readDataToEndOfFile()
-            if let message = String(data: errorData, encoding: .utf8), !message.isEmpty {
-                writeToConsole(message: message, scriptName: scriptName)
-            }
+            let errorString = String(data: errorData, encoding: .utf8)
+            let scriptError = errorString.flatMap { $0.isEmpty ? nil : ScriptError.standardError($0) }
+            
+            completionHandler(scriptError)
         }
     }
     
@@ -183,22 +185,14 @@ final class UnixScript: Script {
     
     // MARK: Private Methods
     
-    /// read content of script file
-    private lazy var content: String? = {
-        
-        guard let data = try? Data(contentsOf: self.descriptor.url) else { return nil }
-        
-        return EncodingManager.shared.defaultEncodings.lazy
-            .compactMap { $0 }
-            .compactMap { String(bomCapableData: data, encoding: $0) }
-            .first
-    }()
-    
-    
-    /// return document content conforming to the input type
+    /// Read the document content.
     ///
+    /// - Parameters:
+    ///   - type: The type of input target.
+    ///   - editor: The editor to read the input.
+    /// - Returns: The read string.
     /// - Throws: `ScriptError`
-    private func readInputString(type: InputType, editor: Editable?) throws -> String {
+    private static func readInput(type: InputType, editor: Editable?) throws -> String {
         
         guard let editor = editor else { throw ScriptError.noInputTarget }
         
@@ -211,8 +205,12 @@ final class UnixScript: Script {
     }
     
     
-    /// apply results conforming to the output type to the frontmost document
+    /// Apply script output to the desired target.
     ///
+    /// - Parameters:
+    ///   - output: The output string.
+    ///   - editor: The editor to write the output.
+    ///   - type: The type of output target.
     /// - Throws: `ScriptError`
     private static func applyOutput(_ output: String, editor: Editable?, type: OutputType) throws {
         
@@ -241,30 +239,8 @@ final class UnixScript: Script {
                 document.selectedRange = NSRange(0..<0)
             
             case .pasteBoard:
-                NSPasteboard.general.declareTypes([.string], owner: nil)
+                NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(output, forType: .string)
-        }
-    }
-    
-}
-
-
-
-// MARK: - Error
-
-private enum ScriptError: Error {
-    
-    case noInputTarget
-    case noOutputTarget
-    
-    
-    var localizedDescription: String {
-        
-        switch self {
-            case .noInputTarget:
-                return "No document to get input.".localized
-            case .noOutputTarget:
-                return "No document to put output.".localized
         }
     }
     

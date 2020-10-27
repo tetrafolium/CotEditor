@@ -40,10 +40,11 @@ extension MultipleReplacement {
         textView.isEditable = false
         
         // setup progress sheet
-        let progress = TextFindProgress(format: .replacement)
-        let indicator = ProgressViewController.instantiate(storyboard: "ProgressView")
-        indicator.closesAutomatically = UserDefaults.standard[.findClosesIndicatorWhenDone]
-        indicator.setup(progress: progress, message: "Highlight".localized)
+        let progress = TextFindProgress(format: .find)
+        let closesAutomatically = UserDefaults.standard[.findClosesIndicatorWhenDone]
+        let indicator = NSStoryboard(name: "ProgressView").instantiateInitialController { (coder) in
+            ProgressViewController(coder: coder, progress: progress, message: "Highlight".localized, closesAutomatically: closesAutomatically)
+        }!
         textView.viewControllerForSheet?.presentAsSheet(indicator)
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -105,9 +106,10 @@ extension MultipleReplacement {
         
         // setup progress sheet
         let progress = TextFindProgress(format: .replacement)
-        let indicator = ProgressViewController.instantiate(storyboard: "ProgressView")
-        indicator.closesAutomatically = UserDefaults.standard[.findClosesIndicatorWhenDone]
-        indicator.setup(progress: progress, message: "Replace All".localized)
+        let closesAutomatically = UserDefaults.standard[.findClosesIndicatorWhenDone]
+        let indicator = NSStoryboard(name: "ProgressView").instantiateInitialController { (coder) in
+            ProgressViewController(coder: coder, progress: progress, message: "Replace All".localized, closesAutomatically: closesAutomatically)
+        }!
         textView.viewControllerForSheet?.presentAsSheet(indicator)
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in

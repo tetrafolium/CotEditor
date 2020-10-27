@@ -23,6 +23,7 @@
 //  limitations under the License.
 //
 
+import Combine
 import Cocoa
 import AudioToolbox
 
@@ -31,6 +32,8 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
     // MARK: Private Properties
     
     private var settingNames = [String]()
+    
+    private var listUpdateObserver: AnyCancellable?
     
     @IBOutlet private weak var tableView: NSTableView?
     
@@ -48,16 +51,16 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         // register droppable types
         self.tableView?.registerForDraggedTypes([.fileURL])
         
-        self.settingNames = ReplacementManager.shared.settingNames
-        
         // create blank if empty
-        if self.settingNames.isEmpty {
+        if ReplacementManager.shared.settingNames.isEmpty {
             do {
                 try ReplacementManager.shared.createUntitledSetting()
             } catch {
                 NSAlert(error: error).beginSheetModal(for: self.view.window!)
             }
         }
+        
+        self.settingNames = ReplacementManager.shared.settingNames
         
         // select an item in list
         let row: Int = {
@@ -71,7 +74,9 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         self.tableView?.selectRowIndexes([row], byExtendingSelection: false)
         
         // observe replacement setting list change
-        NotificationCenter.default.addObserver(self, selector: #selector(setupList), name: didUpdateSettingListNotification, object: ReplacementManager.shared)
+        self.listUpdateObserver = ReplacementManager.shared.$settingNames
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateSettingList() }
     }
     
     
@@ -121,12 +126,12 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
                     menuItem.title = String(format: "Export “%@”…".localized, name)
                 }
                 menuItem.isHidden = !itemSelected
-            
+                
             case #selector(revealSettingInFinder(_:)):
                 if let name = representedSettingName, !isContextualMenu {
                     menuItem.title = String(format: "Reveal “%@” in Finder".localized, name)
-            }
-            
+                }
+                
             case nil:
                 return false
             
@@ -144,26 +149,32 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
     /// add setting
     @IBAction func addSetting(_ sender: Any?) {
         
-        guard let tableView = self.tableView else { return }
-        
-        try? ReplacementManager.shared.createUntitledSetting { (settingName: String) in
-            let row = ReplacementManager.shared.settingNames.firstIndex(of: settingName) ?? 0
-            
-            tableView.selectRowIndexes([row], byExtendingSelection: false)
+        let settingName: String
+        do {
+            settingName = try ReplacementManager.shared.createUntitledSetting()
+        } catch {
+            self.presentError(error)
+            return
         }
+        
+        self.updateSettingList(bySelecting: settingName)
     }
     
     
     /// duplicate selected setting
     @IBAction func duplicateSetting(_ sender: Any?) {
         
-        guard let settingName = self.targetSettingName(for: sender) else { return }
+        guard let baseName = self.targetSettingName(for: sender) else { return }
         
+        let settingName: String
         do {
-            try ReplacementManager.shared.duplicateSetting(name: settingName)
+            settingName = try ReplacementManager.shared.duplicateSetting(name: baseName)
         } catch {
             self.presentError(error)
+            return
         }
+        
+        self.updateSettingList(bySelecting: settingName)
     }
     
     
@@ -245,7 +256,7 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
     /// reload all setting files in Application Support
     @IBAction func reloadAllSettings(_ sender: Any?) {
         
-        ReplacementManager.shared.updateCache()
+        ReplacementManager.shared.reloadCache()
     }
     
     
@@ -279,6 +290,9 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
         alert.informativeText = "This action cannot be undone.".localized
         alert.addButton(withTitle: "Cancel".localized)
         alert.addButton(withTitle: "Delete".localized)
+        if #available(macOS 11, *) {
+            alert.buttons.last?.hasDestructiveAction = true
+        }
         
         let window = self.view.window!
         alert.beginSheetModal(for: window) { [unowned self] (returnCode: NSApplication.ModalResponse) in
@@ -317,18 +331,23 @@ final class MultipleReplacementListViewController: NSViewController, NSMenuItemV
     
     
     /// update setting list
-    @objc private func setupList() {
+    private func updateSettingList(bySelecting selectingName: String? = nil) {
         
-        let settingName = self.selectedSettingName
+        let settingName = selectingName ?? self.selectedSettingName
         
         self.settingNames = ReplacementManager.shared.settingNames
         
-        self.tableView?.reloadData()
+        guard let tableView = self.tableView else { return }
         
-        if let settingName = settingName,
-            let row = self.settingNames.firstIndex(of: settingName)
-        {
-            self.tableView?.selectRowIndexes([row], byExtendingSelection: false)
+        tableView.reloadData()
+        
+        guard
+            let name = settingName,
+            let row = self.settingNames.firstIndex(of: name)
+            else { return }
+        tableView.selectRowIndexes([row], byExtendingSelection: false)
+        if selectingName != nil {
+            tableView.scrollRowToVisible(row)
         }
     }
     
@@ -388,7 +407,7 @@ extension MultipleReplacementListViewController: NSTableViewDataSource {
         let pboard = info.draggingPasteboard
         let objects = pboard.readObjects(forClasses: [NSURL.self],
                                          options: [.urlReadingFileURLsOnly: true,
-                                                   .urlReadingContentsConformToTypes: [DocumentType.replacement.UTType]])
+                                                   .urlReadingContentsConformToTypes: [DocumentType.replacement.utType]])
         
         guard let urls = objects, !urls.isEmpty else { return [] }
         
@@ -407,8 +426,8 @@ extension MultipleReplacementListViewController: NSTableViewDataSource {
         
         info.enumerateDraggingItems(for: tableView, classes: [NSURL.self],
                                     searchOptions: [.urlReadingFileURLsOnly: true,
-                                                    .urlReadingContentsConformToTypes: [DocumentType.replacement.UTType]])
-        { [weak self] (draggingItem: NSDraggingItem, idx: Int, stop: UnsafeMutablePointer<ObjCBool>) in
+                                                    .urlReadingContentsConformToTypes: [DocumentType.replacement.utType]])
+        { [weak self] (draggingItem, _, _) in
             
             guard let fileURL = draggingItem.item as? URL else { return }
             

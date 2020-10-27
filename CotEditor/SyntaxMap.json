@@ -140,6 +140,17 @@
 
     ]
   },
+  "Dockerfile" : {
+    "extensions" : [
+
+    ],
+    "filenames" : [
+      "Dockerfile"
+    ],
+    "interpreters" : [
+
+    ]
+  },
   "DTD" : {
     "extensions" : [
       "dtd"
@@ -425,6 +436,18 @@
 
     ]
   },
+  "Pascal" : {
+    "extensions" : [
+      "pas",
+      "pp"
+    ],
+    "filenames" : [
+
+    ],
+    "interpreters" : [
+
+    ]
+  },
   "Perl" : {
     "extensions" : [
       "pl",
@@ -530,7 +553,7 @@
       "rb"
     ],
     "filenames" : [
-
+      "Gemfile"
     ],
     "interpreters" : [
       "ruby"
@@ -578,6 +601,8 @@
     ],
     "filenames" : [
       ".profile",
+      ".bash_login",
+      ".bash_logout",
       ".bash_profile",
       ".bashrc",
       ".zlogin",
@@ -666,6 +691,17 @@
   "Verilog" : {
     "extensions" : [
       "v"
+    ],
+    "filenames" : [
+
+    ],
+    "interpreters" : [
+
+    ]
+  },
+  "VHDL" : {
+    "extensions" : [
+      "vhd"
     ],
     "filenames" : [
 

@@ -24,6 +24,184 @@
 
 <article>
 <header>
+	<h1>CotEditor 4.0.0</h1>
+	<p>release: <time>2020-10</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li>Brand-new user interface designed to fit macOS 11 Big Sur.<ul>
+		<li>Update the application icon.</li>
+		<li>Redesign the document window.</li>
+	</ul></li>
+	<li>Support Apple Silicon.</li>
+	<li>Add syntax styles for Pascal (Thanks to cbnbg!), Dockerfile, and VHDL.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Change the system requirement to <strong>macOS 10.15 Catalina and later</strong>.</li>
+	<li>Move line endings/file encoding menus from the toolbar to the status bar.</li>
+	<li>Change default settings of items to display in the toolbar/status bar.</li>
+	<li>Change the default theme from Dendrobates to Anura.</li>
+	<li>Change the UI of the Unicode code point input to display the input field just above the insertion point.</li>
+	<li>Change the “trim trailing whitespace on save” option in the General pane to perform the trimming not on save but while typing with delay, and move the option to the Edit pane.</li>
+	<li>On sorting lines by pattern, evaluate numbers more intelligently when the “treat numbers as numeric value” option is enabled.</li>
+	<li>Enable toggling the editor split orientation by right-clicking the editor split button in the navigation bar.</li>
+	<li>Enable action to toggle editor split orientation even when no split editor is opened.</li>
+	<li>Remove the Integration preferences pane and move its contents to the General pane.</li>
+	<li>Enable “select previous/next outline item” commands even when the navigation bar is hidden.</li>
+	<li>Live update selection counts while moving the selection.</li>
+	<li>Scroll editor by swiping the line number area.</li>
+	<li>Reduce the priority that CotEditor implicitly becomes the default application for specific file types.</li>
+	<li>Previously, CotEditor scripts written in Unix scripts, such as Ruby or Python, were decoded using the user-preferred file-encoding set in the Format preferences pane for normal documents, now they are always interpreted as UTF-8.</li>
+	<li>Avoid showing the &quot;edited&quot; indicator in the close button of document windows when the document content is empty and therefore can close the window without the confirmation dialog.</li>
+	<li>Avoid discarding the current input when a new item is added while another item is in editing in the syntax style editor.</li>
+	<li>Round the corners of current line highlight.</li>
+	<li>Put only the filename rather than the absolute path for the relative path insertion (<code>&lt;&lt;&lt;RELATIVE-PATH&gt;&gt;&gt;</code>) when the document file itself is dropped into the editor.</li>
+	<li>Remove the toolbar button to toggle page guide visibility.</li>
+	<li>Remove feature to import legacy syntax style definition files of which format was used in CotEditor 1.x.</li>
+	<li><span class="trivial">trivial</span>: Update the preferences window layout.</li>
+	<li><span class="trivial">trivial</span>: Improve tooltips of toolbar icons to reflect the current document state.</li>
+	<li><span class="trivial">trivial</span>: Optimize the line number calculation in vertical text orientation.</li>
+	<li><span class="trivial">trivial</span>: Always enable non-contiguous layout by the normal horizontal text orientation.</li>
+	<li><span class="trivial">dev</span>: Update the build environment to Xcode 12.2 (Swift 5.3, macOS 11 SDK).</li>
+	<li><span class="trivial">dev</span>: Replace DifferenceKit package with native CollectionDifference.</li>
+	<li><span class="trivial">dev</span>: Update Yams from 3.0.1 to 4.0.0.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li><span class="trivial">trivial</span>: Fix an issue in the sytnax style toolbar item that the menu selected blank if the current style was deleted.</li>
+	<li><span class="trivial">trivial</span>: Fix an issue that the i-beam for the combination of the vertical text orientation and a light theme cropped.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.7</h1>
+	<p>release: <time>2020-10-18</time></p>
+</header>
+
+
+<section>
+<h2>New Features</h2>
+
+<ul>
+	<li>Add new AppleScript/JXA commands <code>smarten quotes</code>, <code>straighten quotes</code>, and <code>smarten dashes</code> for <code>selection</code> object.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Optimize the performance of invisible character drawing, especially with very-long unwrapped lines.</li>
+	<li>Update Shell Script (thanks to ansimita!), Python, Ruby, Swift, and SVG syntax styles.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix the jump button for the theme URL.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.6</h1>
+	<p>release: <time>2020-09-13</time></p>
+</header>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue that the “Open Scripts Folder” command in the script menu did not open the scripts folder for CotEditor but just the general Application Scripts folder.</li>
+	<li>Fix an issue in the find result table that the found string column truncated the text even in the middle of a character that consists of multiple Unicode characters.</li>
+	<li>Fix an issue where the line number view did not update under some specific conditions even when the line height setting is changed.</li>
+	<li>Fix the progress message when highlighting a document with a multiple replacement definition.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.5</h1>
+	<p>release: <time>2020-08-15</time></p>
+</header>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue that window prevented from becoming smaller than the outline items' width.</li>
+	<li>Fix an issue that some text transformation commands, such as “Make Upper Case,” also transformed the next unselected word that is identical to the selected one.</li>
+	<li>Fix an issue in the navigation bar that the open/close split editor buttons did occasionally not work.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
+	<h1>CotEditor 3.9.4</h1>
+	<p>release: <time>2020-08-13</time></p>
+</header>
+
+
+<section>
+<h2>Improvements</h2>
+
+<ul>
+	<li>Make the document window's minimum size smaller.</li>
+	<li><span class="trivial">dev</span>: Update the build environment to Xcode 11.6.</li>
+</ul>
+</section>
+
+
+<section>
+<h2>Fixes</h2>
+
+<ul>
+	<li>Fix an issue that an unremovable empty dialog could show up when performing Replace All under specific conditions.</li>
+	<li>Fix an issue in the find/replacement progress report that the progress message was not updated when nothing found.</li>
+	<li>Fix an issue in the outline menu in the navigation bar that the last separator did not appear.</li>
+	<li>Fix an issue in toolbar that menu style items were vertically squashed in the toolbar customization dialog.</li>
+</ul>
+</section>
+</article>
+
+
+
+<article>
+<header>
 	<h1>CotEditor 3.9.3</h1>
 	<p>release: <time>2020-07-18</time></p>
 </header>

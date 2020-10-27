@@ -23,11 +23,14 @@
 //  limitations under the License.
 //
 
+import Combine
 import Cocoa
 
-final class WindowContentViewController: NSSplitViewController, TabViewControllerDelegate {
+final class WindowContentViewController: NSSplitViewController {
     
     // MARK: Private Properties
+    
+    private var sidebarSelectionObserver: AnyCancellable?
     
     @IBOutlet private weak var documentViewItem: NSSplitViewItem?
     @IBOutlet private weak var sidebarViewItem: NSSplitViewItem?
@@ -42,14 +45,15 @@ final class WindowContentViewController: NSSplitViewController, TabViewControlle
         
         super.viewDidLoad()
         
-        // -> needs layer to mask rounded window corners
-        //                to draw backgrounds of subviews correctly on macOS 10.12 (and macOS 10.13?)
-        self.view.wantsLayer = true
-        
         // set behavior to glow window size on sidebar toggling rather than opening sidebar inward
         self.sidebarViewItem?.collapseBehavior = .preferResizingSplitViewWithFixedSiblings
         
-        self.sidebarViewController?.delegate = self
+        // synchronize sidebar pane among window tabs
+        self.sidebarSelectionObserver = self.sidebarViewController?.publisher(for: \.selectedTabViewItemIndex)
+            .sink { [weak self] (tabViewIndex) in
+                self?.siblings.filter { $0 != self }
+                    .forEach { $0.sidebarViewController?.selectedTabViewItemIndex = tabViewIndex }
+            }
     }
     
     
@@ -107,17 +111,6 @@ final class WindowContentViewController: NSSplitViewController, TabViewControlle
     
     
     
-    // MARK: Sidebar View Controller Delegate
-    
-    /// synchronize sidebar pane among window tabs
-    func tabViewController(_ viewController: NSTabViewController, didSelect tabViewIndex: Int) {
-        
-        self.siblings.filter { $0 != self }
-            .forEach { $0.sidebarViewController?.selectedTabViewItemIndex = tabViewIndex }
-    }
-    
-    
-    
     // MARK: Public Methods
     
     /// deliver editor to outer view controllers
@@ -139,6 +132,7 @@ final class WindowContentViewController: NSSplitViewController, TabViewControlle
         
         assert(self.sidebarViewItem!.isCollapsed)
         assert(self.sidebarViewItem == self.splitViewItems[1])
+        assert(self.isViewLoaded)
         assert(!self.view.window!.isVisible)
         
         guard let sidebarViewItem = self.sidebarViewItem else { return assertionFailure() }
@@ -285,6 +279,8 @@ final class WindowContentViewController: NSSplitViewController, TabViewControlle
     /// whether sidebar state can be toggled
     private var canToggleSidebar: Bool {
         
+        guard self.isViewLoaded else { return false }
+        
         // cannot toggle in the tab overview mode
         if let tabGroup = self.view.window?.tabGroup {
             return !tabGroup.isOverviewVisible
@@ -296,6 +292,8 @@ final class WindowContentViewController: NSSplitViewController, TabViewControlle
     
     /// window content view controllers in all tabs in the same window
     private var siblings: [WindowContentViewController] {
+        
+        guard self.isViewLoaded else { return [] }
         
         return self.view.window?.tabbedWindows?.compactMap { ($0.windowController?.contentViewController as? WindowContentViewController) } ?? [self]
     }

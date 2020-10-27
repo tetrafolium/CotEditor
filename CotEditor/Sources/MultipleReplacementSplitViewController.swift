@@ -8,7 +8,7 @@
 //
 //  ---------------------------------------------------------------------------
 //
-//  © 2017-2019 1024jp
+//  © 2017-2020 1024jp
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -59,4 +59,14 @@ final class MultipleReplacementSplitViewController: NSSplitViewController {
     
     @IBOutlet fileprivate weak var contentListSplitViewItem: NSSplitViewItem?
     @IBOutlet fileprivate weak var mainSplitViewItem: NSSplitViewItem?
+    
+    
+    override func viewDidLoad() {
+        
+        super.viewDidLoad()
+        
+        if #available(macOS 11, *) {
+            self.contentListSplitViewItem?.allowsFullHeightLayout = true
+        }
+    }
 }

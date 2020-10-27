@@ -26,12 +26,40 @@
 
 import Cocoa
 
-typealias OSALineEnding = FourCharCode
-private extension OSALineEnding {
+private enum OSALineEnding: FourCharCode {
     
-    static let lf = FourCharCode(code: "leLF")
-    static let cr = FourCharCode(code: "leCR")
-    static let crlf = FourCharCode(code: "leCL")
+    case lf = "leLF"
+    case cr = "leCR"
+    case crlf = "leCL"
+    
+    
+    var lineEnding: LineEnding {
+        
+        switch self {
+            case .lf:
+                return .lf
+            case .cr:
+                return .cr
+            case .crlf:
+                return .crlf
+        }
+    }
+    
+    
+    init?(lineEnding: LineEnding) {
+        
+        switch lineEnding {
+            case .lf:
+                self = .lf
+            case .cr:
+                self = .cr
+            case .crlf:
+                self = .crlf
+            default:
+                return nil
+        }
+    }
+    
 }
 
 
@@ -106,32 +134,13 @@ extension Document {
     @objc var lineEndingChar: FourCharCode {
         
         get {
-            switch self.lineEnding {
-                case .lf:
-                    return .lf
-                case .cr:
-                    return .cr
-                case .crlf:
-                    return .crlf
-                default:
-                    return .lf
-            }
+            return (OSALineEnding(lineEnding: self.lineEnding) ?? .lf).rawValue
         }
         
         set {
-            let type: LineEnding = {
-                switch newValue {
-                    case .lf:
-                        return .lf
-                    case .cr:
-                        return .cr
-                    case .crlf:
-                        return .crlf
-                    default:
-                        return .lf
-                }
-            }()
-            self.changeLineEnding(to: type)
+            let lineEnding = OSALineEnding(rawValue: newValue)?.lineEnding
+            
+            self.changeLineEnding(to: lineEnding ?? .lf)
         }
     }
     
@@ -139,14 +148,14 @@ extension Document {
     /// encoding name (Unicode text)
     @objc var encodingName: String {
         
-        return String.localizedName(of: self.encoding)
+        return String.localizedName(of: self.fileEncoding.encoding)
     }
     
     
     /// encoding in IANA CharSet name (Unicode text)
     @objc var IANACharSetName: String {
         
-        return self.encoding.ianaCharSetName ?? ""
+        return self.fileEncoding.encoding.ianaCharSetName ?? ""
     }
     
     
@@ -214,14 +223,15 @@ extension Document {
             let encoding = EncodingManager.shared.encoding(name: encodingName)
             else { return false }
         
-        if encoding == self.encoding {
+        if encoding == self.fileEncoding.encoding {
             return true
         }
         
+        let fileEncoding = FileEncoding(encoding: encoding)
         let lossy = (arguments["lossy"] as? Bool) ?? false
         
         do {
-            try self.changeEncoding(to: encoding, withUTF8BOM: false, lossy: lossy)
+            try self.changeEncoding(to: fileEncoding, lossy: lossy)
         } catch {
             return false
         }

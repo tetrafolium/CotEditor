@@ -27,7 +27,7 @@ import Cocoa
 
 final class Console {
     
-    struct Log {
+    fileprivate struct Log {
         
         var message: String
         var title: String?
@@ -40,17 +40,28 @@ final class Console {
     
     static let shared = Console()
     
-    let panelController = NSWindowController.instantiate(storyboard: "ConsolePanel")
+    private(set) lazy var panelController = NSWindowController.instantiate(storyboard: "ConsolePanel")
     
     
     
     // MARK: -
     // MARK: Public Methods
     
-    /// append given message to the console
-    func append(log: Log) {
+    /// Append given message to the console.
+    ///
+    /// - Parameters:
+    ///   - message: The messege to show.
+    ///   - title: The title of the message.
+    func show(message: String, title: String?) {
         
-        (self.panelController.contentViewController as? ConsoleViewController)?.append(log: log)
+        let log = Console.Log(message: message, title: title)
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let panelController = self?.panelController else { return }
+            
+            panelController.showWindow(nil)
+            (panelController.contentViewController as? ConsoleViewController)?.append(log: log)
+        }
     }
     
 }
@@ -82,13 +93,7 @@ final class ConsoleViewController: NSViewController {
     
     private static let fontSize: CGFloat = 11
     
-    private let messageFont: NSFont = {
-        if #available(macOS 10.15, *) {
-            return .monospacedSystemFont(ofSize: ConsoleViewController.fontSize, weight: .regular)
-        } else {
-            return NSFont(named: .menlo, size: ConsoleViewController.fontSize)!
-        }
-    }()
+    private let messageFont: NSFont = .monospacedSystemFont(ofSize: ConsoleViewController.fontSize, weight: .regular)
     
     private let messageParagraphStyle: NSParagraphStyle = {
         // indent for message body
@@ -126,7 +131,7 @@ final class ConsoleViewController: NSViewController {
     // MARK: Public Methods
     
     /// append given message to the console
-    func append(log: Console.Log) {
+    fileprivate func append(log: Console.Log) {
         
         guard let textView = self.textView else { return assertionFailure() }
         

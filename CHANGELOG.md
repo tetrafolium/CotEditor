@@ -2,6 +2,214 @@
 Change Log
 ==========================
 
+4.0.0-beta.6 (unreleased)
+--------------------------
+
+### Fixes
+
+- [beta.3][non-AppStore ver.] Fix an issue in the General preference pane that the checkboxes for software update did not work.
+
+
+
+4.0.0-beta.5 (450)
+--------------------------
+
+### Improvements
+
+- [beta] Draw the background of the area scrolled over the editor also with the theme color.
+- [beta.4][Big Sur] Update the emoji toolbar icon for Dark mode.
+- [beta][trivial] Tweak preferences layout.
+
+
+### Fixes
+
+- [beta.4] Fix an issue in the CotEditor scripting with UNIX scripts that the same standard input could be sent repeatedly to the script.
+- [trivial] Fix an issue that the i-beam for the combination of the vertical text orientation and a light theme cropped (FB8445000).
+
+
+
+4.0.0-beta.4 (448)
+--------------------------
+
+### Improvements
+
+- Reduce the priority that CotEditor implicitly becomes the default application for specific file types.
+- [beta] Update syntax style for Pascal (Thanks to cbnbg!).
+
+
+### Fixes
+
+- [beta.3] Fix an issue on beta.3 that the application crashed when the console window is called first from a script.
+- [beta.3] Fix an issue in the CotEditor scripting with UNIX scripts that the output was still occasionally not applied.
+
+
+
+4.0.0-beta.3 (446)
+--------------------------
+
+### New Features
+
+- Add syntax styles for Pascal (Thanks to cbnbg!) and VHDL.
+
+
+### Improvements
+
+- On sorting lines by pattern, evaluate numbers more intelligently when the “treat numbers as numeric value” option is enabled.
+- Avoid discarding the current input when a new item is added while another item is in editing in the syntax style editor.
+- Put only the filename rather than the absolute path for the relative path insertion (`<<<RELATIVE-PATH>>>`) when the document file itself is dropped into the editor.
+- [beta] Horizontally center the contents of the preferences panes (Thanks to zom-san!).
+- [beta] Update some toolbar icons.
+- [beta][trivial] Update the style of the add/remove buttons.
+- [beta][dev] Update the build environment to Xcode 12.2 beta 3.
+
+
+### Fixes
+
+- [beta] Fix an issue in the CotEditor scripting with UNIX scripts that the standard error output was not displayed on the console.
+- [beta] Fix an issue in the CotEditor scripting with UNIX scripts that the output was occasionally not applied.
+- [beta] Fix the multiple replacement panel layout on macOS 10.15.
+
+
+### Known Issues
+
+- Checkmarks are not applied to the corresponding items in the menus for the collapsed toolbar items.
+- [Big Sur] Syntax highlight for the regular expression disappears when the text field becomes in editing (FB8719584).
+- [Big Sur] Screenshots in the help contents are not updated yet.
+- [Big Sur] Document icons are not updated yet for Big Sur style.
+
+
+
+4.0.0-beta.2 (444)
+--------------------------
+
+### Improvements
+
+- Round the corners of current line highlight.
+- [beta][Big Sur] Match the inspector background to desktop color.
+- [beta][tirivial] Update titlebar color.
+
+
+### Fixes
+
+- [beta] Fix an issue in the navigation bar that the split editor button did not update when changing the split orientation.
+- [beta] Fix an issue in the appearance pane and the multiple replacement panel that the newly added setting was not selected.
+- [beta] Address an issue that the status bar rarely compressed vertically.
+- [beta] Workaround an issue that the initial text color of the pop-up menus in the status bar dimmed.
+
+
+
+4.0.0-beta (442)
+--------------------------
+
+### New Features
+
+- Brand-new user interface designed to fit macOS 11 Big Sur.
+    - Update the application icon.
+    - Redesign the document window.
+- Support Apple Silicon.
+- Add syntax style for Dockerfile.
+
+
+### Improvements
+
+- Change the system requirement to __macOS 10.15 Catalina and later__.
+- Move line endings/file encoding menus from the toolbar to the status bar.
+- Change default settings of items to display in the toolbar/status bar.
+- Change the default theme from Dendrobates to Anura.
+- Change the UI of the Unicode code point input to display the input field just above the insertion point.
+- Change the “trim trailing whitespace on save” option in the General pane to perform the trimming not on save but while typing with delay, and move the option to the Edit pane.
+- Enable toggling the editor split orientation by right-clicking the editor split button in the navigation bar.
+- Enable action to toggle editor split orientation even when no split editor is opened.
+- Remove the Integration preferences pane and move its contents to the General pane.
+- Enable “select previous/next outline item” commands even when the navigation bar is hidden.
+- Live update selection counts while moving the selection.
+- Scroll editor by swiping the line number area.
+- Previously, CotEditor scripts written in Unix scripts, such as Ruby or Python, were decoded using the user-preferred file-encoding set in the Format preferences pane for normal documents, now they are always interpreted as UTF-8.
+- Avoid showing the "edited" indicator in the close button of document windows when the document content is empty and therefore can close the window without the confirmation dialog.
+- Remove the toolbar button to toggle page guide visibility.
+- Remove feature to import legacy syntax style definition files of which format was used in CotEditor 1.x.
+- [trivial] Improve tooltips of toolbar icons to reflect the current document state.
+- [trivial] Optimize the line number calculation in vertical text orientation.
+- [trivial] Always enable non-contiguous layout by the normal horizontal text orientation.
+- [dev] Update the build environment to Xcode 12.2 (Swift 5.3, macOS 11 SDK).
+- [dev] Replace DifferenceKit package with native CollectionDifference.
+- [dev] Update Yams from 3.0.1 to 4.0.0.
+
+
+### Fixes
+
+- Fix the jump button for theme URL.
+- [trivial] Fix an issue in the sytnax style toolbar item that the menu selected blank if the current style was deleted.
+
+
+### Known Issues
+
+- Some of help contents are not updated yet.
+- Document icons are not updated yet for Big Sur style.
+
+
+
+3.9.7 (437)
+--------------------------
+
+### New Features
+
+- Add new AppleScript/JXA commands `smarten quotes`, `straighten quotes`, and `smarten dashes` for `selection` object.
+
+
+### Improvements
+
+- Optimize the performance of invisible character drawing, especially with very-long unwrapped lines.
+- Update Shell Script (thanks to ansimita!), Python, Ruby, Swift, and SVG syntax styles.
+
+
+### Fixes
+
+- Fix the jump button for the theme URL.
+
+
+
+3.9.6 (435)
+--------------------------
+
+### Fixes
+
+- Fix an issue that the “Open Scripts Folder” command in the script menu did not open the scripts folder for CotEditor but just the general Application Scripts folder.
+- Fix an issue in the find result table that the found string column truncated the text even in the middle of a character that consists of multiple Unicode characters.
+- Fix an issue where the line number view did not update under some specific conditions even when the line height setting is changed.
+- Fix the progress message when highlighting a document with a multiple replacement definition.
+
+
+
+3.9.5 (433)
+--------------------------
+
+### Fixes
+
+- Fix an issue on CotEditor 3.9.4 that window prevented from becoming smaller than the outline items' width.
+- Fix an issue that some text transformation commands, such as “Make Upper Case,” also transformed the next unselected word that is identical to the selected one.
+- Fix an issue in the navigation bar that the open/close split editor buttons did occasionally not work.
+
+
+
+3.9.4 (430)
+--------------------------
+
+### Improvements
+
+- Make the document window's minimum size smaller.
+- [dev] Update the build environment to Xcode 11.6.
+
+
+### Fixes
+
+- Fix an issue that an unremovable empty dialog could show up when performing Replace All under specific conditions.
+- Fix an issue in the find/replacement progress report that the progress message was not updated when nothing found.
+- Fix an issue in the outline menu in the navigation bar that the last separator did not appear.
+- Fix an issue in toolbar that menu style items were vertically squashed in the toolbar customization dialog.
+
+
+
 3.9.3 (427)
 --------------------------
 

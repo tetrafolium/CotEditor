@@ -23,6 +23,7 @@
 //  limitations under the License.
 //
 
+import Combine
 import Cocoa
 
 protocol InvisibleDrawing: NSLayoutManager {
@@ -30,7 +31,7 @@ protocol InvisibleDrawing: NSLayoutManager {
     var textFont: NSFont { get }
     var showsInvisibles: Bool { get }
     var showsControls: Bool { get set }
-    var invisiblesDefaultsObservers: [UserDefaultsObservation] { get set }
+    var invisiblesDefaultsObserver: AnyCancellable? { get set }
 }
 
 
@@ -79,6 +80,11 @@ extension InvisibleDrawing {
             
             let glyphIndex = self.glyphIndexForCharacter(at: charIndex)
             
+            var lineFragmentRange: NSRange = .notFound
+            let lineOrigin = self.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: &lineFragmentRange, withoutAdditionalLayout: true).origin
+            let glyphLocation = self.location(forGlyphAt: glyphIndex)
+            let symbolOrigin = lineOrigin.offset(by: origin).offsetBy(dx: glyphLocation.x, dy: baselineOffset - glyphHeight)
+            
             let path: NSBezierPath
             if let cache = pathCache[codeUnit] {
                 path = cache
@@ -87,15 +93,15 @@ extension InvisibleDrawing {
                 switch invisible {
                     case .newLine:
                         glyphWidth = 0
-                    case .fullwidthSpace where self.propertyForGlyph(at: glyphIndex).contains(.elastic):
-                        glyphWidth = self.attributedString()
-                            .attributedSubstring(from: NSRange(location: charIndex, length: 1))
-                            .boundingRect(with: .infinite, context: nil).width
                     case .otherControl:
                         // for non-zeroAdvancement controls, such as VERTICAL TABULATION
                         glyphWidth = self.boundingBoxForControlGlyph(for: self.textFont).width
                     default:
-                        glyphWidth = self.enclosingRectForGlyph(at: glyphIndex, in: textContainer).width
+                        // -> Avoid invoking `.enclosingRectForGlyph(at:in:)` as much as possible
+                        //    that takes long time with long unwrapped lines.
+                        glyphWidth = lineFragmentRange.contains(glyphIndex + 1)
+                            ? self.location(forGlyphAt: glyphIndex + 1).x - glyphLocation.x
+                            : self.enclosingRectForGlyph(at: glyphIndex, in: textContainer).width
                 }
                 
                 let size = CGSize(width: glyphWidth, height: glyphHeight)
@@ -106,10 +112,6 @@ extension InvisibleDrawing {
                     pathCache[codeUnit] = path
                 }
             }
-            
-            let lineOrigin = self.lineFragmentRect(forGlyphAt: glyphIndex, effectiveRange: nil, withoutAdditionalLayout: true).origin
-            let glyphLocation = self.location(forGlyphAt: glyphIndex)
-            let symbolOrigin = lineOrigin.offset(by: origin).offsetBy(dx: glyphLocation.x, dy: baselineOffset - glyphHeight)
             
             path.transform(using: .init(translationByX: symbolOrigin.x, byY: symbolOrigin.y))
             path.fill()
@@ -139,15 +141,14 @@ extension InvisibleDrawing {
         }
         
         // update UserDefaults observation if needed
-        if self.showsInvisibles, self.invisiblesDefaultsObservers.isEmpty {
-            let visibilityKeys = Invisible.allCases.map(\.visibilityDefaultKey).unique
-            self.invisiblesDefaultsObservers.forEach { $0.invalidate() }
-            self.invisiblesDefaultsObservers = UserDefaults.standard.observe(keys: visibilityKeys) { [weak self] (_, _) in
-                self?.invalidateInvisibleDisplay()
-            }
-        } else if !self.showsInvisibles, !self.invisiblesDefaultsObservers.isEmpty {
-            self.invisiblesDefaultsObservers.forEach { $0.invalidate() }
-            self.invisiblesDefaultsObservers = []
+        if self.showsInvisibles, self.invisiblesDefaultsObserver == nil {
+            let publishers = Invisible.allCases.map(\.visibilityDefaultKey).unique
+                .map { UserDefaults.standard.publisher(for: $0) }
+            self.invisiblesDefaultsObserver = Publishers.MergeMany(publishers)
+                .sink { [weak self] _ in self?.invalidateInvisibleDisplay() }
+            
+        } else if !self.showsInvisibles {
+            self.invisiblesDefaultsObserver = nil
         }
     }
     
