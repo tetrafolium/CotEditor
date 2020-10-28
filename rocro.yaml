@@ -1,70 +1,74 @@
 inspecode:
   # This repository contains Swift and HTML codes.
 
-  cpd:
-    options:
-      --skip-lexical-errors:
-    thresholds: { num-issues: 3 }
+  tasks:
 
-  fossology:
-    thresholds: { num-issues: 16 }
+  tools:
 
-  grep:
-    thresholds: { num-issues: 2 }
+    cpd:
+      options:
+        --skip-lexical-errors:
+      thresholds: {num-issues: 3}
 
-  htmlhint:
-    thresholds: { num-issues: 213 }
+    fossology:
+      thresholds: {num-issues: 16}
 
-  jscpd:
-    options:
-      --min-lines: 10
-    thresholds: { num-issues: 101 }
+    grep:
+      thresholds: {num-issues: 2}
 
-  jshint:
-  - input:
-    - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
-    options:
-      --extra-ext: ".html"
-    thresholds: { num-issues: 700 }
-  - input:
-    - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
-    options:
-      --extra-ext: ".html"
-    thresholds: { num-issues: 700 }
-  - ignore:
-    - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
-    options:
-      --extra-ext: ".html"
-    thresholds: { num-issues: 96 }
+    htmlhint:
+      thresholds: {num-issues: 213}
 
-  misspell:
-    auto-fix: true
-    thresholds: { num-issues: 36 }
+    jscpd:
+      options:
+        --min-lines: 10
+      thresholds: {num-issues: 101}
 
-  prettier:
-    auto-fix: true
-    thresholds: { num-issues: 238 }
+    jshint:
+    - input:
+      - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
+      options:
+        --extra-ext: ".html"
+      thresholds: {num-issues: 700}
+    - input:
+      - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
+      options:
+        --extra-ext: ".html"
+      thresholds: {num-issues: 700}
+    - ignore:
+      - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
+      options:
+        --extra-ext: ".html"
+      thresholds: {num-issues: 96}
 
-  stylelint:
-    auto-fix: true
-    thresholds: { num-issues: 19 }
+    misspell:
+      auto-fix: true
+      thresholds: {num-issues: 36}
 
-  swiftlint:
-    auto-fix: true
-    thresholds: { num-issues: 0 }
+    prettier:
+      auto-fix: true
+      thresholds: {num-issues: 238}
 
-  tailor:
-    options:
-      --except:
-      - "trailing-whitespace"   # too many issues
-    thresholds: { num-issues: 274 }
+    stylelint:
+      auto-fix: true
+      thresholds: {num-issues: 19}
 
-  tidy:
-    auto-fix: false
-    thresholds: { num-issues: 461 }
+    swiftlint:
+      auto-fix: true
+      thresholds: {num-issues: 0}
 
-  unused:
-    options:
-      --single-occurrence:
-      --all-likelihoods:
-    thresholds: { num-issues: 0 }
+    tailor:
+      options:
+        --except:
+        - "trailing-whitespace"   # too many issues
+      thresholds: {num-issues: 274}
+
+    tidy:
+      auto-fix: false
+      thresholds: {num-issues: 461}
+
+    unused:
+      options:
+        --single-occurrence:
+        --all-likelihoods:
+      thresholds: {num-issues: 0}
