@@ -1,7 +1,82 @@
+---
 inspecode:
   # This repository contains Swift and HTML codes.
 
   tasks:
+
+    - name: dockerfilelint
+      type: docker-build
+      dockerfile: "inspecode-dockerfilelint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.json"
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.sarif"
+      reports:
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.sarif"
+          format: SARIF
+      # machine: {cpu: 0.75}
+      thresholds: {num-issues: 999}
+
+    - name: hadolint
+      type: docker-build
+      dockerfile: "inspecode-hadolint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: hadolint-task
+          path: "/.reports/hadolint.json"
+        - from: hadolint-task
+          path: "/.reports/hadolint.sarif"
+      reports:
+        - from: hadolint-task
+          path: "/.reports/hadolint.sarif"
+          format:
+            type: SARIF
+      # machine: {cpu: 0.75}
+      thresholds: {num-issues: 999}
+
+    - name: yamllint_SARIF
+      type: docker-build
+      dockerfile: "inspecode-yamllint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+        - from: yamllint-task
+          path: "/.reports/yamllint.sarif"
+      reports:
+        - from: yamllint-task
+          path: "/.reports/yamllint.sarif"
+          format:
+            type: SARIF
+      # machine: {cpu: 0.75}
+      thresholds: {num-issues: 999}
+
+    # - name: yamllint_example
+    #   type: docker-build
+    #   dockerfile: "inspecode-yamllint.Dockerfile"
+    #   options:
+    #     --build-arg:
+    #       OUTDIR=/.reports
+    #   artifacts:
+    #   - from: yamllint-task
+    #     path: "/.reports/yamllint.issues"
+    #   reports:
+    #   - from: yamllint-task
+    #     path: "/.reports/yamllint.issues"
+    #     format:
+    #       type: example
+    #       path: rocro-tasks-examples/yamllint.issues
+    #   # machine: {cpu: 0.75}
+    #   thresholds: {num-issues: 999}
 
   tools:
 
@@ -10,8 +85,9 @@ inspecode:
         --skip-lexical-errors:
       thresholds: {num-issues: 3}
 
-    fossology:
-      thresholds: {num-issues: 16}
+    #### stop temporary (long execution time)
+    # fossology:
+    #   thresholds: {num-issues: 16}
 
     grep:
       thresholds: {num-issues: 2}
@@ -26,17 +102,17 @@ inspecode:
 
     jshint:
     - input:
-      - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
+        - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
       options:
         --extra-ext: ".html"
       thresholds: {num-issues: 700}
     - input:
-      - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
+        - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
       options:
         --extra-ext: ".html"
       thresholds: {num-issues: 700}
     - ignore:
-      - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
+        - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
       options:
         --extra-ext: ".html"
       thresholds: {num-issues: 96}
@@ -57,11 +133,12 @@ inspecode:
       auto-fix: true
       thresholds: {num-issues: 0}
 
-    tailor:
-      options:
-        --except:
-        - "trailing-whitespace"   # too many issues
-      thresholds: {num-issues: 274}
+    #### stop temporary (long execution time)
+    # tailor:
+    #   options:
+    #     --except:
+    #       - "trailing-whitespace"   # too many issues
+    #   thresholds: {num-issues: 274}
 
     tidy:
       auto-fix: false
