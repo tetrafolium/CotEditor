@@ -19,8 +19,7 @@ inspecode:
         - from: dockerfilelint-task
           path: "/.reports/dockerfilelint.sarif"
           format: SARIF
-      # machine: {cpu: 0.75}
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 1}
 
     - name: hadolint
       type: docker-build
@@ -38,8 +37,7 @@ inspecode:
           path: "/.reports/hadolint.sarif"
           format:
             type: SARIF
-      # machine: {cpu: 0.75}
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 10}
 
     - name: yamllint_SARIF
       type: docker-build

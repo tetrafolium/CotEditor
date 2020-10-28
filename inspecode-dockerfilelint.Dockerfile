@@ -29,7 +29,7 @@ COPY . "${REPODIR}"
 WORKDIR "${REPODIR}"
 
 ### Run dockerfilelint ...
-RUN ( find . -type f -name '*Dockerfile*' -print0 | xargs -0 dockerfilelint --output json ) \
+RUN ( find . -type f -name '*Dockerfile' -print0 | xargs -0 dockerfilelint --output json ) \
         > "${OUTDIR}/dockerfilelint.json" || true
 RUN ls -la "${OUTDIR}"
 

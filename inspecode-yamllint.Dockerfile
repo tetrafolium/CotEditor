@@ -31,6 +31,8 @@ WORKDIR "${REPODIR}"
 RUN yamllint -f parsable . > "${OUTDIR}/yamllint.issues" || true
 RUN ls -la "${OUTDIR}"
 
+RUN echo "<<< yamllint.issues ---"; cat -v "${OUTDIR}/yamllint.issues"; echo "--- yamllint.issues >>>"
+
 ### Convert yamllint issues to SARIF ...
 RUN go run "${TOOLDIR}/yamllint/cmd/main.go" "${REPOPATH}" \
         < "${OUTDIR}/yamllint.issues" \
