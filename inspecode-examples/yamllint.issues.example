@@ -1,0 +1,11 @@
+{{file:./.swiftlint.yml}}:{{startLine:1}}:{{startColumn:1}}: [{{level:warning}}] {{message:missing document start "---" (document-start)}}
+{{file:./.swiftlint.yml}}:{{startLine:84}}:{{startColumn:5}}: [{{level:error}}] {{message:wrong indentation: expected 2 but found 4 (indentation)}}
+{{file:./.swiftlint.yml}}:{{startLine:151}}:{{startColumn:81}}: [{{level:error}}] {{message:line too long (98 > 80 characters) (line-length)}}
+{{file:./.github/workflows/Test.yml}}:{{startLine:3}}:{{startColumn:1}}: [{{level:warning}}] {{message:truthy value should be one of [false, true] (truthy)}}
+{{file:./CotEditor/Syntaxes/C++.yaml}}:{{startLine:127}}:{{startColumn:1}}: [{{level:error}}] {{message:duplication of key "attributes" in mapping (key-duplicates)}}
+{{file:./rocro.yaml}}:{{startLine:61}}:{{startColumn:5}}: [{{level:warning}}] {{message:comment not indented like content (comments-indentation)}}
+
+{{baseDir=/home/rocro}}
+{{lineOriginZero=false}}
+{{columnOriginZero=false}}
+{{levelMap= {} }}

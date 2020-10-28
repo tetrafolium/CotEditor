@@ -56,25 +56,25 @@ inspecode:
           format:
             type: SARIF
       # machine: {cpu: 0.75}
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 912}
 
-    # - name: yamllint_example
-    #   type: docker-build
-    #   dockerfile: "inspecode-yamllint.Dockerfile"
-    #   options:
-    #     --build-arg:
-    #       OUTDIR=/.reports
-    #   artifacts:
-    #   - from: yamllint-task
-    #     path: "/.reports/yamllint.issues"
-    #   reports:
-    #   - from: yamllint-task
-    #     path: "/.reports/yamllint.issues"
-    #     format:
-    #       type: example
-    #       path: rocro-tasks-examples/yamllint.issues
-    #   # machine: {cpu: 0.75}
-    #   thresholds: {num-issues: 999}
+    - name: yamllint_Example
+      type: docker-build
+      dockerfile: "inspecode-yamllint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+      - from: yamllint-task
+        path: "/.reports/yamllint.issues"
+      reports:
+      - from: yamllint-task
+        path: "/.reports/yamllint.issues"
+        format:
+          type: example
+          path: inspecode-examples/yamllint.issues.example
+      # machine: {cpu: 0.75}
+      thresholds: {num-issues: 912}
 
   tools:
 
