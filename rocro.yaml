@@ -1,10 +1,7 @@
 inspecode:
   # This repository contains Swift and HTML codes.
 
-  cpd:          # supports: C C++ C# Go Java JavaScript Objective-C PHP Python Ruby Scala Swift
-    # ignore:
-    # - "./Tests/LineSortTests.swift"                 # Lexocal error (at EMOJI) in file
-    # - "./CotEditor/Sources/String+Additions.swift"  # Encountered: token recognition error at: '#"'
+  cpd:
     options:
       --skip-lexical-errors:
     thresholds: { num-issues: 3 }
@@ -12,78 +9,74 @@ inspecode:
   fossology:
     thresholds: { num-issues: 16 }
 
-  grep:         # supports: All Languages
+  grep:
     thresholds: { num-issues: 2 }
 
-  htmlhint:     # supports: HTML
-    thresholds: { num-issues: 234 }
+  htmlhint:
+    thresholds: { num-issues: 213 }
 
-  jscpd:        # supports: C C++ C# CoffeeScript CSS Go HTML Java JavaScript Kotlin Objective-C PHP Python Ruby Scala Swift TypeScript
+  jscpd:
     options:
       --min-lines: 10
-    thresholds: { num-issues: 91 }
+    thresholds: { num-issues: 101 }
 
-  jshint:       # supports: JavaScript HTML
+  jshint:
   - input:
     - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
     options:
       --extra-ext: ".html"
-    thresholds: { num-issues: 672 }
+    thresholds: { num-issues: 700 }
   - input:
-    - "./CotEditor/CotEditor.help/"
-    ignore:
-    - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
+    - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
     options:
       --extra-ext: ".html"
-    thresholds: { num-issues: 672 }
+    thresholds: { num-issues: 700 }
   - ignore:
-    - "./CotEditor/CotEditor.help/"
+    - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
     options:
       --extra-ext: ".html"
-    thresholds: { num-issues: 88 }
+    thresholds: { num-issues: 96 }
 
-  misspell:     # supports: All Languages
+  misspell:
     auto-fix: true
-    thresholds: { num-issues: 32 }
+    thresholds: { num-issues: 36 }
 
-  prettier:     # supports: CSS HTML JavaScript Markdown TypeScript
+  prettier:
     auto-fix: true
-    thresholds: { num-issues: 227 }
+    thresholds: { num-issues: 238 }
 
-  stylelint:    # supports: CSS HTML Markdown
-    ignore:
+  stylelint:
+  - auto-fix: true
+    thresholds: { num-issues: 999 }
+  - ignore:
     - "./*.md"
     - "./CotEditor/CotEditor.help/Contents/Resources/"
     - "./CotEditor/*.*proj/"
     auto-fix: true
-    thresholds: { num-issues: 19 }  # 10168 issues when no `ignore:`.
+    thresholds: { num-issues: 3 }
 
-  swiftlint:    # supports: Swift
-    auto-fix: true
-    #options:
-    #  --enable-all-rules:  # detects below with this option.
-    #         8066  TOTAL
-    #         3432  (explicit_type_interface)
-    #         2370  (explicit_acl)
-    #          559  (conditional_returns_on_newline)
-    #          292  (explicit_top_level_acl)
-    #          289  (force_unwrapping)
-    #          228  (private_action)
-    #          116  (switch_case_on_newline)
-    #          114  (explicit_enum_raw_value)
-    #               etc.
-    #  --format:            # finished with errors (no log messages) with this option.
-    thresholds: { num-issues: 1 }
+  swiftlint:
+  - auto-fix: true
+    thresholds: { num-issues: 0 }
+  - options:
+      --enable-all-rules:  # detects below with this option.
+    thresholds: { num-issues: 999 }
+  - options:
+      --format:            # finished with errors (no log messages) with this option.
+    thresholds: { num-issues: 999 }
 
-  tailor:       # supports: Swift
+  tailor:
     options:
       --except:
       - "trailing-whitespace"   # too many issues
-    thresholds: { num-issues: 240 }
+    thresholds: { num-issues: 274 }
 
-  tidy:         # supports: HTML
+  tidy:
     auto-fix: false
-    thresholds: { num-issues: 428 }
+    thresholds: { num-issues: 461 }
 
-  unused:       # supports: C C++ C# Go HTML Java JavaScript Objective-C PHP Python Ruby Shell
+  unused:
+    options:
+      --single-occurrence:
+      --all-likelihoods:
     thresholds: { num-issues: 0 }
