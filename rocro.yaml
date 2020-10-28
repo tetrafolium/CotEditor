@@ -46,24 +46,12 @@ inspecode:
     thresholds: { num-issues: 238 }
 
   stylelint:
-  - auto-fix: true
-    thresholds: { num-issues: 999 }
-  - ignore:
-    - "./*.md"
-    - "./CotEditor/CotEditor.help/Contents/Resources/"
-    - "./CotEditor/*.*proj/"
     auto-fix: true
-    thresholds: { num-issues: 3 }
+    thresholds: { num-issues: 19 }
 
   swiftlint:
-  - auto-fix: true
+    auto-fix: true
     thresholds: { num-issues: 0 }
-  - options:
-      --enable-all-rules:  # detects below with this option.
-    thresholds: { num-issues: 999 }
-  - options:
-      --format:            # finished with errors (no log messages) with this option.
-    thresholds: { num-issues: 999 }
 
   tailor:
     options:
