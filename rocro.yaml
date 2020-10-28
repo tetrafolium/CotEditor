@@ -55,8 +55,7 @@ inspecode:
           path: "/.reports/yamllint.sarif"
           format:
             type: SARIF
-      # machine: {cpu: 0.75}
-      thresholds: {num-issues: 912}
+      thresholds: {num-issues: 910}
 
     - name: yamllint_Example
       type: docker-build
@@ -65,16 +64,15 @@ inspecode:
         --build-arg:
           OUTDIR=/.reports
       artifacts:
-      - from: yamllint-task
-        path: "/.reports/yamllint.issues"
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
       reports:
-      - from: yamllint-task
-        path: "/.reports/yamllint.issues"
-        format:
-          type: example
-          path: inspecode-examples/yamllint.issues.example
-      # machine: {cpu: 0.75}
-      thresholds: {num-issues: 912}
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+          format:
+            type: example
+            path: inspecode-examples/yamllint.issues.example
+      thresholds: {num-issues: 910}
 
   tools:
 
@@ -99,21 +97,21 @@ inspecode:
       thresholds: {num-issues: 101}
 
     jshint:
-    - input:
-        - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
-      options:
-        --extra-ext: ".html"
-      thresholds: {num-issues: 700}
-    - input:
-        - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
-      options:
-        --extra-ext: ".html"
-      thresholds: {num-issues: 700}
-    - ignore:
-        - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
-      options:
-        --extra-ext: ".html"
-      thresholds: {num-issues: 96}
+      # - input:
+      #     - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
+      #   options:
+      #     --extra-ext: ".html"
+      #   thresholds: {num-issues: 700}
+      # - input:
+      #     - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
+      #   options:
+      #     --extra-ext: ".html"
+      #   thresholds: {num-issues: 700}
+      - ignore:
+          - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
+        options:
+          --extra-ext: ".html"
+        thresholds: {num-issues: 96}
 
     misspell:
       auto-fix: true
