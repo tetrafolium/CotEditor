@@ -12,7 +12,7 @@ Fülle die folgende Vorlage aus und poste sie auf [GitHub Issues](https://github
 
 <!-- Schreibe hier deinen Kommentar -->
 
-## Steps to Reproduce the Issue (Schritte zur Reproduktion)
+## Steps to Reproduce the Issue (Schritte zur Reproduction)
 
 <!-- Schreibe hier deinen Kommentar -->
 

@@ -147,7 +147,7 @@ final class IncompatibleCharactersViewController: NSViewController {
 
 private extension NSTextStorage {
     
-    /// change background color of pased-in ranges
+    /// change background color of passed-in ranges
     func markup(ranges: [NSRange], lineEnding: LineEnding = .lf) {
         
         guard !ranges.isEmpty else { return }

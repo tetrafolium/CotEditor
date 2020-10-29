@@ -1,4 +1,4 @@
-Preencha o modelo a seguir e publique-o em [GitHub Issues](https://github.com/coteditor/CotEditor/issues) ou envie-o para o e-mail <coteditor.github@gmail.com>. Note que o conteúdo do e-mail enviado pode ser compartilhado na página de problemas do GitHub. Escreva seus comentários em inglês ou japonês.
+Preencha o modelo a seguir e publique-o em [GitHub Issues](https://github.com/coteditor/CotEditor/issues) ou envie-o para o e-mail <coteditor.github@gmail.com>. Note que o conteúdo do e-mail enviado pode ser compartilhado na página de problems do GitHub. Escreva seus comentários em inglês ou japonês.
 
 ---
 

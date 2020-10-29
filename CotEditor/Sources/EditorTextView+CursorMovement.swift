@@ -579,7 +579,7 @@ extension EditorTextView {
     }
     
     
-    /// delete to the biginning of word (opt+delete)
+    /// delete to the beginning of word (opt+delete)
     override func deleteWordBackward(_ sender: Any?) {
         
         guard self.hasMultipleInsertions else { return super.deleteWordBackward(sender) }

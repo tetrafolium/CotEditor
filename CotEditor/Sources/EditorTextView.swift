@@ -1090,7 +1090,7 @@ final class EditorTextView: NSTextView, Themable, CurrentLineHighlighting, URLDe
             return self.insertText(string, replacementRanges: ranges)
         }
         
-        // keep multiple cursors after pasting mutliple text
+        // keep multiple cursors after pasting multiple text
         if pboard.name == .general,
             let groupCounts = pboard.propertyList(forType: .multipleTextSelection) as? [Int],
             let string = pboard.string(forType: .string),
