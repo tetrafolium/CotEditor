@@ -67,7 +67,7 @@ final class PersistentOSAScript: Script, AppleEventReceivable {
     func run(completionHandler: @escaping ((_ error: ScriptError?) -> Void)) throws {
         
         guard self.url.isReachable else {
-            throw ScriptFileError(kind: .existance, url: self.url)
+            throw ScriptFileError(kind: .existence, url: self.url)
         }
         
         var errorInfo: NSDictionary? = NSDictionary()
@@ -92,7 +92,7 @@ final class PersistentOSAScript: Script, AppleEventReceivable {
         }
         
         guard self.url.isReachable else {
-            throw ScriptFileError(kind: .existance, url: self.url)
+            throw ScriptFileError(kind: .existence, url: self.url)
         }
         
         var errorInfo: NSDictionary?

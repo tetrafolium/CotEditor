@@ -243,7 +243,7 @@ extension LayoutManager: NSLayoutManagerDelegate {
     func layoutManager(_ layoutManager: NSLayoutManager, shouldSetLineFragmentRect lineFragmentRect: UnsafeMutablePointer<NSRect>, lineFragmentUsedRect: UnsafeMutablePointer<NSRect>, baselineOffset: UnsafeMutablePointer<CGFloat>, in textContainer: NSTextContainer, forGlyphRange glyphRange: NSRange) -> Bool {
         
         // avoid inconsistent line height by a composite font
-        // -> The line height by normal input keeps consistant when overriding the related methods in NSLayoutManager.
+        // -> The line height by normal input keeps consistent when overriding the related methods in NSLayoutManager.
         //    but then, the drawing won't be update properly when the font or line hight is changed.
         // -> NSParagraphStyle's `.lineheightMultiple` can also control the line height,
         //    but it causes an issue when the first character of the string uses a fallback font.
@@ -288,7 +288,7 @@ extension LayoutManager: NSLayoutManagerDelegate {
     }
     
     
-    /// apply sytax highlighing on printing also
+    /// apply sytax highlighting on printing also
     func layoutManager(_ layoutManager: NSLayoutManager, shouldUseTemporaryAttributes attrs: [NSAttributedString.Key: Any] = [:], forDrawingToScreen toScreen: Bool, atCharacterIndex charIndex: Int, effectiveRange effectiveCharRange: NSRangePointer?) -> [NSAttributedString.Key: Any]? {
         
         return attrs
