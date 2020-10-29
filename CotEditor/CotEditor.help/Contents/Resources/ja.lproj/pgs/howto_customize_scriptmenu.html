@@ -1,47 +1,66 @@
 <html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="keywords" content="スクリプトメニュー,スクリプト" />
+    <link rel="start" href="../CotEditorHelp.html" />
+    <link rel="index" href="../xpgs/xall.html" />
+    <link rel="stylesheet" href="../../Shared/sty/standard.css" />
+    <title>スクリプトメニューをカスタマイズする</title>
+  </head>
 
-<head>
-	<meta charset="UTF-8"/>
-	<meta name="keywords" content="スクリプトメニュー,スクリプト"/>
-	<link rel="start" href="../CotEditorHelp.html"/>
-	<link rel="index" href="../xpgs/xall.html"/>
-	<link rel="stylesheet" href="../../Shared/sty/standard.css"/>
-	<title>スクリプトメニューをカスタマイズする</title>
-</head>
+  <body>
+    <a name="howto_customize_scriptmenu"></a>
 
-<body>
-<a name="howto_customize_scriptmenu"></a>
+    <nav>
+      <ul>
+        <li><a href="../CotEditorHelp.html">CotEditorヘルプ</a></li>
+      </ul>
+    </nav>
 
-<nav><ul>
-	<li><a href="../CotEditorHelp.html">CotEditorヘルプ</a></li>
-</ul></nav>
+    <h1>スクリプトメニューをカスタマイズする</h1>
 
+    <p>スクリプトメニューに項目を追加したり、削除するには次のようにします。</p>
+    <ol>
+      <li>
+        CotEditorのスクリプトメニューから「スクリプトフォルダを開く」を選択すると、Finderがスクリプト用の次のフォルダを開きます：<br />
+        ~/ライブラリ/Application Scripts/com.coteditor.CotEditor/
+      </li>
+      <li>
+        このフォルダに作成したスクリプトを置くか、また不要なスクリプトを削除します。
+      </li>
+      <li>
+        スクリプトフォルダの変更はスクリプトメニューに自動的に反映されます。
+      </li>
+    </ol>
+    <ul>
+      <li>
+        CotEditorは次の拡張子を持つファイルをスクリプトファイルとして認識します：.applescript
+        .scpt .scptd .sh .pl .php .rb .py .js
+      </li>
+      <li>
+        スクリプトのファイル名にある特定の文字列を含めることで、<strong>表示順を変更</strong>したり<strong>キーボードショートカットを設定</strong>できます。<br />
+        詳しくは「<a href="../pgs/about_script_name.html"
+          >CotEditorスクリプトのファイル名規則</a
+        >」を参照してください。
+      </li>
+      <li>
+        スクリプトフォルダにはフォルダも置くことができます。フォルダはサブメニューとして表示されます。
+      </li>
+    </ul>
 
-<h1>スクリプトメニューをカスタマイズする</h1>
-
-<p>スクリプトメニューに項目を追加したり、削除するには次のようにします。</p>
-<ol>
-	<li>CotEditorのスクリプトメニューから「スクリプトフォルダを開く」を選択すると、Finderがスクリプト用の次のフォルダを開きます：<br/>
-	~/ライブラリ/Application Scripts/com.coteditor.CotEditor/</li>
-	<li>このフォルダに作成したスクリプトを置くか、また不要なスクリプトを削除します。</li>
-	<li>スクリプトフォルダの変更はスクリプトメニューに自動的に反映されます。</li>
-</ol>
-<ul>
-	<li>CotEditorは次の拡張子を持つファイルをスクリプトファイルとして認識します：.applescript .scpt .scptd .sh .pl .php .rb .py .js</li>
-	<li>スクリプトのファイル名にある特定の文字列を含めることで、<strong>表示順を変更</strong>したり<strong>キーボードショートカットを設定</strong>できます。<br />
-	詳しくは「<a href="../pgs/about_script_name.html">CotEditorスクリプトのファイル名規則</a>」を参照してください。</li>
-	<li>スクリプトフォルダにはフォルダも置くことができます。フォルダはサブメニューとして表示されます。</li>
-</ul>
-
-
-<section id="cf">
-<h2>関連項目</h2>
-<ul>
-	<li><a href="../pgs/about_script_name.html">CotEditorスクリプトのファイル名規則</a></li>
-	<li><a href="../pgs/about_script_spec.html">UNIXスクリプトとの連携</a></li>
-	<li><a href="../pgs/about_applescript.html">AppleScriptとの連携</a></li>
-</ul>
-</section>
-
-</body>
+    <section id="cf">
+      <h2>関連項目</h2>
+      <ul>
+        <li>
+          <a href="../pgs/about_script_name.html"
+            >CotEditorスクリプトのファイル名規則</a
+          >
+        </li>
+        <li>
+          <a href="../pgs/about_script_spec.html">UNIXスクリプトとの連携</a>
+        </li>
+        <li><a href="../pgs/about_applescript.html">AppleScriptとの連携</a></li>
+      </ul>
+    </section>
+  </body>
 </html>
