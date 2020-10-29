@@ -31,7 +31,10 @@ WORKDIR "${REPODIR}"
 RUN yamllint -f parsable . > "${OUTDIR}/yamllint.issues" || true
 RUN ls -la "${OUTDIR}"
 
+### investigating about codelift#2066 .....
 RUN echo "<<< yamllint.issues ---"; cat -v "${OUTDIR}/yamllint.issues"; echo "--- yamllint.issues >>>"
+RUN mv "${OUTDIR}/yamllint.issues" "${OUTDIR}/yamllint.issues.tmp" \
+    && grep -vw truthy "${OUTDIR}/yamllint.issues.tmp" > "${OUTDIR}/yamllint.issues"
 
 ### Convert yamllint issues to SARIF ...
 RUN go run "${TOOLDIR}/yamllint/cmd/main.go" "${REPOPATH}" \
