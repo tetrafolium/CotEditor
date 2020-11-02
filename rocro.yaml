@@ -2,6 +2,78 @@
 inspecode:
   # This repository contains Swift and HTML codes.
 
+  tasks:
+
+    - name: yamllint_SARIF
+      type: docker-build
+      dockerfile: "inspecode-yamllint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+        - from: yamllint-task
+          path: "/.reports/yamllint.sarif"
+      reports:
+        - from: yamllint-task
+          path: "/.reports/yamllint.sarif"
+          format:
+            type: SARIF
+      thresholds: {num-issues: 910}
+
+    - name: hadolint
+      type: docker-build
+      dockerfile: "inspecode-hadolint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: hadolint-task
+          path: "/.reports/hadolint.json"
+        - from: hadolint-task
+          path: "/.reports/hadolint.sarif"
+      reports:
+        - from: hadolint-task
+          path: "/.reports/hadolint.sarif"
+          format:
+            type: SARIF
+      thresholds: {num-issues: 10}
+
+    - name: yamllint_Example
+      type: docker-build
+      dockerfile: "inspecode-yamllint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+      reports:
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+          format:
+            type: example
+            path: inspecode-examples/yamllint.issues.example
+      thresholds: {num-issues: 910}
+
+    - name: dockerfilelint
+      type: docker-build
+      dockerfile: "inspecode-dockerfilelint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.json"
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.sarif"
+      reports:
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.sarif"
+          format: SARIF
+      thresholds: {num-issues: 1}
+
   tools:
 
     ###### Tools supports Any Languages
@@ -81,75 +153,3 @@ inspecode:
       options:
         --min-lines: 10
       thresholds: {num-issues: 101}
-
-  tasks:
-
-    - name: yamllint_SARIF
-      type: docker-build
-      dockerfile: "inspecode-yamllint.Dockerfile"
-      options:
-        --build-arg:
-          OUTDIR=/.reports
-      artifacts:
-        - from: yamllint-task
-          path: "/.reports/yamllint.issues"
-        - from: yamllint-task
-          path: "/.reports/yamllint.sarif"
-      reports:
-        - from: yamllint-task
-          path: "/.reports/yamllint.sarif"
-          format:
-            type: SARIF
-      thresholds: {num-issues: 910}
-
-    - name: hadolint
-      type: docker-build
-      dockerfile: "inspecode-hadolint.Dockerfile"
-      options:
-        --build-arg:
-          OUTDIR=/.reports
-      artifacts:
-        - from: hadolint-task
-          path: "/.reports/hadolint.json"
-        - from: hadolint-task
-          path: "/.reports/hadolint.sarif"
-      reports:
-        - from: hadolint-task
-          path: "/.reports/hadolint.sarif"
-          format:
-            type: SARIF
-      thresholds: {num-issues: 10}
-
-    - name: yamllint_Example
-      type: docker-build
-      dockerfile: "inspecode-yamllint.Dockerfile"
-      options:
-        --build-arg:
-          OUTDIR=/.reports
-      artifacts:
-        - from: yamllint-task
-          path: "/.reports/yamllint.issues"
-      reports:
-        - from: yamllint-task
-          path: "/.reports/yamllint.issues"
-          format:
-            type: example
-            path: inspecode-examples/yamllint.issues.example
-      thresholds: {num-issues: 910}
-
-    - name: dockerfilelint
-      type: docker-build
-      dockerfile: "inspecode-dockerfilelint.Dockerfile"
-      options:
-        --build-arg:
-          OUTDIR=/.reports
-      artifacts:
-        - from: dockerfilelint-task
-          path: "/.reports/dockerfilelint.json"
-        - from: dockerfilelint-task
-          path: "/.reports/dockerfilelint.sarif"
-      reports:
-        - from: dockerfilelint-task
-          path: "/.reports/dockerfilelint.sarif"
-          format: SARIF
-      thresholds: {num-issues: 1}
