@@ -6,7 +6,6 @@ SyntaxMap.json gathers the file mapping information of all bundled syntax styles
 
 This program is aimed to be used only locally in the CotEditor.app's build phase.
 
-
 ## Usage
 
 Give the path to the directory for the bundled syntax files, then JSON string will be printed to the standard output.
