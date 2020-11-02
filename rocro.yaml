@@ -2,24 +2,105 @@
 inspecode:
   # This repository contains Swift and HTML codes.
 
+  tools:
+
+    ###### Tools supports Any Languages
+
+    ### stop temporary (long execution time)
+    # fossology:
+    #   thresholds: {num-issues: 16}
+
+    grep:
+      thresholds: {num-issues: 2}
+
+    misspell:
+      auto-fix: true
+      thresholds: {num-issues: 36}
+
+    ###### Tools supports HTTP
+
+    htmlhint:
+      thresholds: {num-issues: 213}
+
+    jshint:
+      # - input:
+      #     - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
+      #   options:
+      #     --extra-ext: ".html"
+      #   thresholds: {num-issues: 700}
+      # - input:
+      #     - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
+      #   options:
+      #     --extra-ext: ".html"
+      #   thresholds: {num-issues: 700}
+      - ignore:
+          - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
+        options:
+          --extra-ext: ".html"
+        thresholds: {num-issues: 96}
+
+    prettier:
+      auto-fix: true
+      thresholds: {num-issues: 238}
+
+    tidy:
+      auto-fix: false
+      thresholds: {num-issues: 461}
+
+    unused:
+      options:
+        --single-occurrence:
+        --all-likelihoods:
+      thresholds: {num-issues: 0}
+
+    stylelint:
+      auto-fix: true
+      thresholds: {num-issues: 19}
+
+    ###### Tools supports Swift
+
+    cpd:
+      options:
+        --skip-lexical-errors:
+      thresholds: {num-issues: 3}
+
+    swiftlint:
+      auto-fix: true
+      thresholds: {num-issues: 0}
+
+    ### stop temporary (long execution time)
+    # tailor:
+    #   options:
+    #     --except:
+    #       - "trailing-whitespace"   # too many issues
+    #   thresholds: {num-issues: 274}
+
+    ###### Tools supports HTML and Swift
+
+    jscpd:
+      options:
+        --min-lines: 10
+      thresholds: {num-issues: 101}
+
   tasks:
 
-    - name: dockerfilelint
+    - name: yamllint_SARIF
       type: docker-build
-      dockerfile: "inspecode-dockerfilelint.Dockerfile"
+      dockerfile: "inspecode-yamllint.Dockerfile"
       options:
         --build-arg:
           OUTDIR=/.reports
       artifacts:
-        - from: dockerfilelint-task
-          path: "/.reports/dockerfilelint.json"
-        - from: dockerfilelint-task
-          path: "/.reports/dockerfilelint.sarif"
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+        - from: yamllint-task
+          path: "/.reports/yamllint.sarif"
       reports:
-        - from: dockerfilelint-task
-          path: "/.reports/dockerfilelint.sarif"
-          format: SARIF
-      thresholds: {num-issues: 1}
+        - from: yamllint-task
+          path: "/.reports/yamllint.sarif"
+          format:
+            type: SARIF
+      thresholds: {num-issues: 910}
 
     - name: hadolint
       type: docker-build
@@ -56,92 +137,19 @@ inspecode:
             path: inspecode-examples/yamllint.issues.example
       thresholds: {num-issues: 910}
 
-    - name: yamllint_SARIF
+    - name: dockerfilelint
       type: docker-build
-      dockerfile: "inspecode-yamllint.Dockerfile"
+      dockerfile: "inspecode-dockerfilelint.Dockerfile"
       options:
         --build-arg:
           OUTDIR=/.reports
       artifacts:
-        - from: yamllint-task
-          path: "/.reports/yamllint.issues"
-        - from: yamllint-task
-          path: "/.reports/yamllint.sarif"
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.json"
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.sarif"
       reports:
-        - from: yamllint-task
-          path: "/.reports/yamllint.sarif"
-          format:
-            type: SARIF
-      thresholds: {num-issues: 910}
-
-  tools:
-
-    cpd:
-      options:
-        --skip-lexical-errors:
-      thresholds: {num-issues: 3}
-
-    #### stop temporary (long execution time)
-    # fossology:
-    #   thresholds: {num-issues: 16}
-
-    grep:
-      thresholds: {num-issues: 2}
-
-    htmlhint:
-      thresholds: {num-issues: 213}
-
-    jscpd:
-      options:
-        --min-lines: 10
-      thresholds: {num-issues: 101}
-
-    jshint:
-      # - input:
-      #     - "./CotEditor/CotEditor.help/Contents/Resources/en.lproj/"
-      #   options:
-      #     --extra-ext: ".html"
-      #   thresholds: {num-issues: 700}
-      # - input:
-      #     - "./CotEditor/CotEditor.help/Contents/Resources/ja.lproj/"
-      #   options:
-      #     --extra-ext: ".html"
-      #   thresholds: {num-issues: 700}
-      - ignore:
-          - "./CotEditor/CotEditor.help/Contents/Resources/*.lproj/"
-        options:
-          --extra-ext: ".html"
-        thresholds: {num-issues: 96}
-
-    misspell:
-      auto-fix: true
-      thresholds: {num-issues: 36}
-
-    prettier:
-      auto-fix: true
-      thresholds: {num-issues: 238}
-
-    stylelint:
-      auto-fix: true
-      thresholds: {num-issues: 19}
-
-    swiftlint:
-      auto-fix: true
-      thresholds: {num-issues: 0}
-
-    #### stop temporary (long execution time)
-    # tailor:
-    #   options:
-    #     --except:
-    #       - "trailing-whitespace"   # too many issues
-    #   thresholds: {num-issues: 274}
-
-    tidy:
-      auto-fix: false
-      thresholds: {num-issues: 461}
-
-    unused:
-      options:
-        --single-occurrence:
-        --all-likelihoods:
-      thresholds: {num-issues: 0}
+        - from: dockerfilelint-task
+          path: "/.reports/dockerfilelint.sarif"
+          format: SARIF
+      thresholds: {num-issues: 1}
