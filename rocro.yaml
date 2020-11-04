@@ -39,7 +39,7 @@ inspecode:
             type: SARIF
       thresholds: {num-issues: 10}
 
-    - name: yamllint_Example
+    - name: yamllint_example
       type: docker-build
       dockerfile: "inspecode-yamllint.Dockerfile"
       options:
