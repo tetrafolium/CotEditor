@@ -39,23 +39,6 @@ inspecode:
             type: SARIF
       thresholds: {num-issues: 10}
 
-    - name: yamllint_example
-      type: docker-build
-      dockerfile: "inspecode-yamllint.Dockerfile"
-      options:
-        --build-arg:
-          OUTDIR=/.reports
-      artifacts:
-        - from: yamllint-task
-          path: "/.reports/yamllint.issues"
-      reports:
-        - from: yamllint-task
-          path: "/.reports/yamllint.issues"
-          format:
-            type: example
-            path: inspecode-examples/yamllint.issues.example
-      thresholds: {num-issues: 910}
-
     - name: dockerfilelint
       type: docker-build
       dockerfile: "inspecode-dockerfilelint.Dockerfile"
@@ -72,6 +55,23 @@ inspecode:
           path: "/.reports/dockerfilelint.sarif"
           format: SARIF
       thresholds: {num-issues: 1}
+
+    - name: yamllint_example
+      type: docker-build
+      dockerfile: "inspecode-yamllint.Dockerfile"
+      options:
+        --build-arg:
+          OUTDIR=/.reports
+      artifacts:
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+      reports:
+        - from: yamllint-task
+          path: "/.reports/yamllint.issues"
+          format:
+            type: example
+            path: inspecode-examples/yamllint.issues.example
+      thresholds: {num-issues: 910}
 
   tools:
 
