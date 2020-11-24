@@ -178,7 +178,7 @@ private extension CFStringEncoding {
     
     /// Return encoding name with style.
     ///
-    /// This funciton is designed __only for__ the encoding list table.
+    /// This function is designed __only for__ the encoding list table.
     ///
     /// - Parameter withUTF8BOM: True when needing to attach " with BOM" to the name if the encoding is .utf8.
     /// - Returns: A styled encoding name.

@@ -3484,7 +3484,7 @@ no change.
 
 ### Improvements
 
-- Rename “Spelling” menu item to “Spelling and Grammer” in Edit menu, and also add “Substitutions” and “Transformations” items
+- Rename “Spelling” menu item to “Spelling and Grammar” in Edit menu, and also add “Substitutions” and “Transformations” items
   - From this, remove “Uppercase”, “Lowercase” and “Capitalize” in “Utility” menu.
 - Update “Apache” syntax style:
   - Indent outline items.

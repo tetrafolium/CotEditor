@@ -95,7 +95,7 @@ final class MenuKeyBindingManager: KeyBindingManager {
         
         try super.validate(shortcut: shortcut, oldShortcut: oldShortcut)
         
-        // command key existance check
+        // command key existence check
         if !shortcut.isEmpty, !shortcut.modifierMask.contains(.command) {
             throw InvalidKeySpecCharactersError(kind: .lackingCommandKey, shortcut: shortcut)
         }
