@@ -129,7 +129,7 @@ inspecode:
       thresholds: {num-issues: 36}
 
     phpcs:
-      auto-fix: false
+      auto-fix: true
       thresholds: {num-issues: 279}
 
     prettier:
