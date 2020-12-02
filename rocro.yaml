@@ -81,6 +81,13 @@ inspecode:
         --skip-lexical-errors:
       thresholds: {num-issues: 3}
 
+    csscomb:
+      auto-fix: false
+      thresholds: {num-issues: 999}
+
+    csslint:
+      thresholds: {num-issues: 999}
+
     #### stop temporary (long execution time)
     # fossology:
     #   thresholds: {num-issues: 16}
@@ -117,9 +124,19 @@ inspecode:
       auto-fix: true
       thresholds: {num-issues: 36}
 
+    phpcs:
+      auto-fix: false
+      thresholds: {num-issues: 999}
+
     prettier:
       auto-fix: true
       thresholds: {num-issues: 238}
+
+    sass-lint:
+      thresholds: {num-issues: 999}
+
+    scss-lint:
+      thresholds: {num-issues: 999}
 
     stylelint:
       auto-fix: true
