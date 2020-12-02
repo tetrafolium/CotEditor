@@ -81,12 +81,16 @@ inspecode:
         --skip-lexical-errors:
       thresholds: {num-issues: 3}
 
+    ### (node:142) UnhandledPromiseRejectionWarning: [object Object]
+    ### (node:142) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). (rejection id: 2)
+    ### (node:142) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+    ### CSScomb finished with errors.
     csscomb:
       auto-fix: false
       thresholds: {num-issues: 999}
 
     csslint:
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 200}
 
     #### stop temporary (long execution time)
     # fossology:
@@ -126,17 +130,17 @@ inspecode:
 
     phpcs:
       auto-fix: false
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 279}
 
     prettier:
       auto-fix: true
       thresholds: {num-issues: 238}
 
     sass-lint:
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 0}   # found no input files
 
     scss-lint:
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 0}   # found no input files
 
     stylelint:
       auto-fix: true
