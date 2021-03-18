@@ -11,73 +11,73 @@
 
 
 #Command section {
-	border-top: 1px solid #ddd;
+    border-top: 1px solid #ddd;
 }
 #Command h3 {
-	display: none;
+    display: none;
 }
 
 .added {
-	color: hsl(80, 50%, 40%);
+    color: hsl(80, 50%, 40%);
 }
 .deprecated {
-	color: hsl(44, 75%, 33%);
+    color: hsl(44, 75%, 33%);
 }
 dfn {
-	font-weight: bold;
+    font-weight: bold;
 }
 
 figure {
-	margin: 1em 0;
+    margin: 1em 0;
 }
 figure > figcaption {
-	margin-left: 2em;
+    margin-left: 2em;
 }
 
 
 /* tree */
 dl.tree,
 dl.subtree {
-	overflow: hidden;
+    overflow: hidden;
 }
 dl.tree + * {
-	clear: left;
+    clear: left;
 }
 dl.tree dt::after {
-	content: ':';
-	font-weight: normal;
-	margin-right: 0.5em;
+    content: ':';
+    font-weight: normal;
+    margin-right: 0.5em;
 }
 dl.tree dt,
 dl.tree dd {
-	float: left;
-	margin: 0.1em 0;
+    float: left;
+    margin: 0.1em 0;
 }
 dl.tree dt,
 dl.tree dd + dd {
-	clear: left;
+    clear: left;
 }
 dl.tree dl.subtree {
-	margin: 0 0 0 2.5em;
+    margin: 0 0 0 2.5em;
 }
 dl.tree dl.subtree dt {
-	font-weight: normal;
+    font-weight: normal;
 }
 dl.tree dl.subtree dt::before {
-	content: '- ';
-	color: hsl(0, 0%, 50%);
+    content: '- ';
+    color: hsl(0, 0%, 50%);
 }
 
 ul.tree, ul.tree ul {
-	border: none;
-	background: none;
+    border: none;
+    background: none;
 }
 ul.tree li {
-	list-style: none;
+    list-style: none;
 }
 ul.tree li li::before {
-	content: '- ';
-	color: hsl(0, 0%, 50%);
+    content: '- ';
+    color: hsl(0, 0%, 50%);
 }
 
 
