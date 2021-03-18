@@ -9,17 +9,16 @@
  © 2006-2019 CotEditor Project
 */
 
-
 body > h1::before {
-    display: none;
+  display: none;
 }
 
 ul {
-    padding: 0;
-    list-style-type: none;
+  padding: 0;
+  list-style-type: none;
 }
 
 body > ul li {
-    border-bottom: 0.5px solid -apple-system-tertiary-label;
-    padding: 0.3em 0;
+  border-bottom: 0.5px solid -apple-system-tertiary-label;
+  padding: 0.3em 0;
 }
