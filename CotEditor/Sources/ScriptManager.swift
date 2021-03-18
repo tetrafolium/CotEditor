@@ -196,7 +196,7 @@ final class ScriptManager: NSObject, NSFilePresenter {
                 
                 case [.option, .shift]:  // reveal
                     guard script.url.isReachable else {
-                        throw ScriptFileError(kind: .existance, url: script.url)
+                        throw ScriptFileError(kind: .existence, url: script.url)
                     }
                     NSWorkspace.shared.activateFileViewerSelecting([script.url])
                 

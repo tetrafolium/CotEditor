@@ -82,7 +82,7 @@ final class SyntaxEditViewController: NSViewController, NSTextFieldDelegate, NST
     // MARK: -
     // MARK: Lifecycle
     
-    /// prepare embeded TabViewController
+    /// prepare embedded TabViewController
     override func prepare(for segue: NSStoryboardSegue, sender: Any?) {
         
         super.prepare(for: segue, sender: sender)
