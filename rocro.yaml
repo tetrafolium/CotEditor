@@ -54,7 +54,7 @@ inspecode:
           format:
             type: example
             path: inspecode-examples/yamllint.issues.example
-      thresholds: {num-issues: 912}
+      thresholds: {num-issues: 916}
 
     - name: yamllint_SARIF
       type: docker-build
@@ -72,7 +72,7 @@ inspecode:
           path: "/.reports/yamllint.sarif"
           format:
             type: SARIF
-      thresholds: {num-issues: 912}
+      thresholds: {num-issues: 916}
 
   tools:
 
@@ -81,14 +81,9 @@ inspecode:
         --skip-lexical-errors:
       thresholds: {num-issues: 3}
 
-    #### (codelift#2116)
-    ### (node:142) UnhandledPromiseRejectionWarning: [object Object]
-    ### (node:142) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). (rejection id: 2)
-    ### (node:142) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
-    ### CSScomb finished with errors.
     csscomb:
       auto-fix: false
-      thresholds: {num-issues: 999}
+      thresholds: {num-issues: 9}
 
     csslint:
       thresholds: {num-issues: 200}
