@@ -101,7 +101,7 @@ inspecode:
     jscpd:
       options:
         --min-lines: 10
-      thresholds: {num-issues: 101}
+      thresholds: {num-issues: 128}
 
     jshint:
       # - input:
