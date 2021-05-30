@@ -5,3 +5,6 @@
 	path = Frameworks/Sparkle
 	url = https://github.com/sparkle-project/Sparkle.git
 	branch = 2.x
+[submodule "inspecode-tasks"]
+	path = inspecode-tasks
+	url = https://github.com/tetrafolium/inspecode-tasks.git

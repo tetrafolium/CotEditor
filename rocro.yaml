@@ -6,10 +6,10 @@ inspecode:
 
     - name: dockerfilelint
       type: docker-build
-      dockerfile: "inspecode-dockerfilelint.Dockerfile"
+      dockerfile: ".rocro/dflint/Dockerfile"
       options:
-        --build-arg:
-          OUTDIR=/.reports
+        --context: .
+        --build-arg: [OUTDIR=/.reports]
       artifacts:
         - from: dockerfilelint-task
           path: "/.reports/dockerfilelint.json"
@@ -23,10 +23,10 @@ inspecode:
 
     - name: hadolint
       type: docker-build
-      dockerfile: "inspecode-hadolint.Dockerfile"
+      dockerfile: ".rocro/hadolint/Dockerfile"
       options:
-        --build-arg:
-          OUTDIR=/.reports
+        --context: .
+        --build-arg: [OUTDIR=/.reports]
       artifacts:
         - from: hadolint-task
           path: "/.reports/hadolint.json"
@@ -41,10 +41,10 @@ inspecode:
 
     - name: yamllint_Example
       type: docker-build
-      dockerfile: "inspecode-yamllint.Dockerfile"
+      dockerfile: ".rocro/yamllint/Dockerfile"
       options:
-        --build-arg:
-          OUTDIR=/.reports
+        --context: .
+        --build-arg: [OUTDIR=/.reports]
       artifacts:
         - from: yamllint-task
           path: "/.reports/yamllint.issues"
@@ -53,15 +53,15 @@ inspecode:
           path: "/.reports/yamllint.issues"
           format:
             type: example
-            path: inspecode-examples/yamllint.issues.example
+            path: ".rocro/yamllint/example.issues"
       thresholds: {num-issues: 916}
 
     - name: yamllint_SARIF
       type: docker-build
-      dockerfile: "inspecode-yamllint.Dockerfile"
+      dockerfile: ".rocro/yamllint/Dockerfile"
       options:
-        --build-arg:
-          OUTDIR=/.reports
+        --context: .
+        --build-arg: [OUTDIR=/.reports]
       artifacts:
         - from: yamllint-task
           path: "/.reports/yamllint.issues"
