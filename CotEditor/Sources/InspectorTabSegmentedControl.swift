@@ -87,7 +87,7 @@ final class InspectorTabSegmentedControl: NSSegmentedControl {
     
     // MARK: Private Methods
     
-    /// Return the image associated with the specified segment by taking the selection state into concideration.
+    /// Return the image associated with the specified segment by taking the selection state into consideration.
     ///
     /// - Parameters:
     ///   - segment: The index of the segment whose image you want to get.
