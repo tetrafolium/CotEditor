@@ -4,10 +4,11 @@ FROM golang:1.15-alpine AS linter-stage
 RUN apk add --update --no-cache curl git
 
 ### Install hadolint ...
-ENV HADOLINT_VERSION="v1.18.0"
+ENV HADOLINT_ARCHDIR="https://github.com/hadolint/hadolint/releases/download" \
+    HADOLINT_VERSION="v1.18.0"
 RUN echo "+++ $(uname -s)-$(uname -m)"
 RUN curl -sL -o /usr/bin/hadolint \
-         "https://github.com/hadolint/hadolint/releases/download/${HADOLINT_VERSION}/hadolint-$(uname -s)-$(uname -m)" \
+         "${HADOLINT_ARCHDIR}/${HADOLINT_VERSION}/hadolint-$(uname -s)-$(uname -m)" \
  && chmod 755 /usr/bin/hadolint
 
 ENV GOBIN="$GOROOT/bin" \
@@ -30,7 +31,8 @@ WORKDIR "${REPODIR}"
 RUN ln -s "${REPODIR}/$(basename "${TOOLPATH}")" "${TOOLDIR}"
 
 ### Run hadolint ...
-RUN ( find . -type f -name '*Dockerfile' -print0 | xargs -0 hadolint --format json ) \
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+RUN ( find . -type f -name '*Dockerfile*' -print0 | xargs -0 hadolint --format json ) \
         > "${OUTDIR}/hadolint.json" || true
 RUN ls -la "${OUTDIR}"
 
