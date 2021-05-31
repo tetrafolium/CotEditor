@@ -70,7 +70,7 @@ final class AppleScript: Script, AppleEventReceivable {
     func run(withAppleEvent event: NSAppleEventDescriptor?, completionHandler: @escaping ((_ error: ScriptError?) -> Void)) throws {
         
         guard self.url.isReachable else {
-            throw ScriptFileError(kind: .existance, url: self.url)
+            throw ScriptFileError(kind: .existence, url: self.url)
         }
         
         let task = try NSUserAppleScriptTask(url: self.url)
