@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS dockerfilelint-task
+FROM node:lts-alpine AS linter-stage
 
 ### Install golang ...
 RUN apk add --update --no-cache git go && \

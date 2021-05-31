@@ -1,4 +1,4 @@
-FROM python:3-alpine AS yamllint-task
+FROM python:3-alpine AS linter-stage
 
 ### Install golang ...
 RUN apk add --update --no-cache go && \

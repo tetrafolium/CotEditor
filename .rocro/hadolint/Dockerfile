@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine AS hadolint-task
+FROM golang:1.15-alpine AS linter-stage
 
 ### Install tools ...
 RUN apk add --update --no-cache curl git
