@@ -9,325 +9,324 @@
  © 2006-2020 CotEditor Project
 */
 
-
 :root {
-    -webkit-text-size-adjust: 100%;
-    font: 10pt/1.5 -apple-system, sans-serif;
-    font-weight: 400;
-    color: -apple-system-label;
+  -webkit-text-size-adjust: 100%;
+  font: 10pt/1.5 -apple-system, sans-serif;
+  font-weight: 400;
+  color: -apple-system-label;
 }
 body {
-    margin: 1em auto;
-    padding: 0 1em;
-    max-width: 7in;
+  margin: 1em auto;
+  padding: 0 1em;
+  max-width: 7in;
 }
 
 a {
-    text-decoration: none;
+  text-decoration: none;
 }
-a:link, a:visited {
-    color: hsl(211, 67%, 50%);
+a:link,
+a:visited {
+  color: hsl(211, 67%, 50%);
 }
 a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 b {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 kbd {
-    font-family: -apple-system, sans-serif;
-    padding: 0 0.2em;
-    margin: 0 0.1em;
-    border-radius: 0.2em;
-    border: 1px solid -apple-system-tertiary-label;
-    box-shadow: 0 1px 0 hsla(0, 0%, 0%, .05);
+  font-family: -apple-system, sans-serif;
+  padding: 0 0.2em;
+  margin: 0 0.1em;
+  border-radius: 0.2em;
+  border: 1px solid -apple-system-tertiary-label;
+  box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.05);
 }
 
 hr {
-    opacity: 0.33;
+  opacity: 0.33;
 }
 
 :not(h1) > code {
-    font-family: 'Menlo', monospace;
-    font-size: 90%;
-    background: hsla(201, 30%, 50%, .02);
-    border: 1px solid hsla(201, 40%, 50%, .15);
-    border-radius: 2px;
-    padding: 0 0.2em;
+  font-family: "Menlo", monospace;
+  font-size: 90%;
+  background: hsla(201, 30%, 50%, 0.02);
+  border: 1px solid hsla(201, 40%, 50%, 0.15);
+  border-radius: 2px;
+  padding: 0 0.2em;
 }
 code.AppleScript {
-    color: hsl(230, 67%, 45%);
+  color: hsl(230, 67%, 45%);
 }
 pre code {
-    background: transparent;
-    border: none;
+  background: transparent;
+  border: none;
 }
 
 body > h1 {
-    font-family: -apple-system-headline, sans-serif;
-    font-size: 1.71rem;
-    line-height: 1.0;
-    font-weight: 400;
-    margin: 0 0 1.5em;
+  font-family: -apple-system-headline, sans-serif;
+  font-size: 1.71rem;
+  line-height: 1;
+  font-weight: 400;
+  margin: 0 0 1.5em;
 }
 body > h1::before {
-    content: '';
-    background: url('../gfx/icon_32x32@2x.png');
-    background-size: contain;
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    vertical-align: -8px;
-    margin-right: 8px;
+  content: "";
+  background: url("../gfx/icon_32x32@2x.png");
+  background-size: contain;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  vertical-align: -8px;
+  margin-right: 8px;
 }
 h2 {
-    font-family: -apple-system-subheadline, sans-serif;
-    font-size: 1.41rem;
-    font-weight: 400;
-    line-height: 1.1;
-    font-weight: 500;
-    margin-top: 2.5em;
-    margin-bottom: 1em;
-    clear: both;
+  font-family: -apple-system-subheadline, sans-serif;
+  font-size: 1.41rem;
+  font-weight: 400;
+  line-height: 1.1;
+  font-weight: 500;
+  margin-top: 2.5em;
+  margin-bottom: 1em;
+  clear: both;
 }
 h3 {
-    font-size: 100%;
-    line-height: 1.1;
-    margin-top: 1.5em;
+  font-size: 100%;
+  line-height: 1.1;
+  margin-top: 1.5em;
 }
 h4 {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
 h4 + * {
-    margin-top: 0;
+  margin-top: 0;
 }
 
-article+article {
-    margin: 2em 0;
-    border-top: 1px solid -apple-system-separator;
+article + article {
+  margin: 2em 0;
+  border-top: 1px solid -apple-system-separator;
 }
 
 p:lang(ja) {
-    text-indent: 1em;
+  text-indent: 1em;
 }
 
 ol,
 ul,
 pre {
-    margin: 0.5em 0;
-    clear: both;
+  margin: 0.5em 0;
+  clear: both;
 }
 pre {
-    margin-left: 1em;
+  margin-left: 1em;
 }
 pre.source {
-    background: hsl(0, 0%, 98%);
-    border: 1px solid -apple-system-tertiary-label;
-    border-radius: 3px;
-    max-width: 50em;
-    padding: 0.2em 0.5em;
+  background: hsl(0, 0%, 98%);
+  border: 1px solid -apple-system-tertiary-label;
+  border-radius: 3px;
+  max-width: 50em;
+  padding: 0.2em 0.5em;
 }
 
 ul {
-    list-style-type: circle;
+  list-style-type: circle;
 }
 
 li {
-    margin-bottom: 0.5em;
+  margin-bottom: 0.5em;
 }
 
 ul ul,
 ul ol {
-    padding: 0 3em;
-    margin: 0.5em 0;
-    border: none;
+  padding: 0 3em;
+  margin: 0.5em 0;
+  border: none;
 }
 
 ul + ul,
 ol + ol,
 ul + ol,
 ol + ul {
-    margin-top: 1em;
+  margin-top: 1em;
 }
 
 ul.topicbox {
-    background-color: white;
-    border: 1px dotted #999;
+  background-color: white;
+  border: 1px dotted #999;
 }
 table ul li {
-    margin-bottom: 0.2em;
+  margin-bottom: 0.2em;
 }
 
 #cf {
-    margin-top: 3em;
+  margin-top: 3em;
 }
 #cf h2 {
-    font-size: 100%;
-    font-weight: 600;
-    text-transform: capitalize;
-    margin-bottom: 0.5em;
+  font-size: 100%;
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-bottom: 0.5em;
 }
 #cf ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    border: none;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  border: none;
 }
 
 p.point {
-    padding: 1em 2em 1em 1.5em;
-    margin: auto -1%;
-    border: 1px solid hsl(213, 25%, 80%);
-    background-color: hsl(213, 25%, 96%);
+  padding: 1em 2em 1em 1.5em;
+  margin: auto -1%;
+  border: 1px solid hsl(213, 25%, 80%);
+  background-color: hsl(213, 25%, 96%);
 }
 
-em, strong {
-    font-weight: 600;
-    font-style: normal;
+em,
+strong {
+  font-weight: 600;
+  font-style: normal;
 }
 
 p#relbar {
-    text-align: right;
+  text-align: right;
 }
 
 .figmarker {
-    font-weight: bold;
-    color: red;
+  font-weight: bold;
+  color: red;
 }
 
 img.snapshot {
-    float: left;
-    margin: 0 1em 1em 0;
+  float: left;
+  margin: 0 1em 1em 0;
 }
 
 dt {
-    font-weight: 600;
-    margin-left: 0.5em;
+  font-weight: 600;
+  margin-left: 0.5em;
 }
 dd {
-    margin-left: 2.5em;
+  margin-left: 2.5em;
 }
 dd + dt {
-    margin-top: 1em;
+  margin-top: 1em;
 }
 dl dl dd + dt {
-    margin-top: 0.5em;
+  margin-top: 0.5em;
 }
 dd + dd dl {
-    margin-top: 0.5em;
+  margin-top: 0.5em;
 }
 
 table {
-    font-size: 100%;
-    border-collapse: collapse;
-    empty-cells: show;
-    margin: 1em 0;
+  font-size: 100%;
+  border-collapse: collapse;
+  empty-cells: show;
+  margin: 1em 0;
 }
 table caption {
-    text-align: left;
-    margin: 0.4em 0;
+  text-align: left;
+  margin: 0.4em 0;
 }
 th,
 td {
-    border-top: 1px solid -apple-system-quaternary-label;
-    border-bottom: 1px solid -apple-system-quaternary-label;
-    margin: 0;
-    padding: 0.4em 0.5em;
+  border-top: 1px solid -apple-system-quaternary-label;
+  border-bottom: 1px solid -apple-system-quaternary-label;
+  margin: 0;
+  padding: 0.4em 0.5em;
 }
 table thead tr th {
-    font-weight: 500;
+  font-weight: 500;
 }
 table thead tr:first-child > * {
-    border-top: none;
+  border-top: none;
 }
-table  tr:first-child > * {
-    border-top-color: -apple-system-secondary-label;
+table tr:first-child > * {
+  border-top-color: -apple-system-secondary-label;
 }
-table  tr:last-child > * {
-    border-bottom-color: -apple-system-secondary-label;
+table tr:last-child > * {
+  border-bottom-color: -apple-system-secondary-label;
 }
 th {
-    font-weight: normal;
-    white-space: nowrap;
+  font-weight: normal;
+  white-space: nowrap;
 }
 th code {
-    border: none;
-    background: none;
+  border: none;
+  background: none;
 }
 th.lh,
 tbody th:first-child {
-    text-align: left;
-    vertical-align: top;
+  text-align: left;
+  vertical-align: top;
 }
 
 tt,
 pre {
-    font-family: 'Courier', 'Courier New', monospace;
+  font-family: "Courier", "Courier New", monospace;
 }
-
 
 /* header */
 body {
-    padding-top: 48px;
+  padding-top: 48px;
 }
 
 body > nav {
-    border-bottom: 1px solid hsl(0, 0%, 80%);
-    background: hsl(0, 0%, 96%);
-    
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
+  border-bottom: 1px solid hsl(0, 0%, 80%);
+  background: hsl(0, 0%, 96%);
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
 }
 body > nav a {
-    color: -apple-system-secondary-label;
+  color: -apple-system-secondary-label;
 }
 body > nav ul {
-    border: none;
-    background: transparent;
-    margin: 0;
-    padding: 0;
+  border: none;
+  background: transparent;
+  margin: 0;
+  padding: 0;
 }
 body > nav li {
-    display: inline-block;
-    margin: 0.2em 1em;
+  display: inline-block;
+  margin: 0.2em 1em;
 }
-
 
 /* syntax highlight */
 span.comment {
-    color: hsl(0, 40%, 40%);
+  color: hsl(0, 40%, 40%);
 }
 span.keyword {
-    color: hsl(210, 50%, 40%);
+  color: hsl(210, 50%, 40%);
 }
 span.string {
-    color: hsl(0, 0%, 50%);
+  color: hsl(0, 0%, 50%);
 }
 span.invisible {
-    color: -apple-system-secondary-label;
-    font-family: monospace;
+  color: -apple-system-secondary-label;
+  font-family: monospace;
 }
 
 /* dark mode */
 
 :root {
-    color-scheme: light dark;
+  color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
-    body > nav {
-        border-bottom-color: hsl(0, 0%, 20%);
-        background: hsl(0, 0%, 10%);
-    }
-    pre.source {
-        background: hsl(0, 0%, 10%);
-    }
-    code.AppleScript {
-        color: hsl(230, 50%, 60%);
-    }
+  body > nav {
+    border-bottom-color: hsl(0, 0%, 20%);
+    background: hsl(0, 0%, 10%);
+  }
+  pre.source {
+    background: hsl(0, 0%, 10%);
+  }
+  code.AppleScript {
+    color: hsl(230, 50%, 60%);
+  }
 }
