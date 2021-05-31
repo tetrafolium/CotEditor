@@ -1,54 +1,87 @@
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="keywords" content="garbled character, encoding" />
+    <link rel="start" href="../CotEditorHelp.html" />
+    <link rel="index" href="../xpgs/xall.html" />
+    <link rel="stylesheet" href="../../Shared/sty/standard.css" />
+    <title>Characters aren't displayed correctly</title>
+  </head>
 
-<head>
-	<meta charset="UTF-8"/>
-	<meta name="keywords" content="garbled character, encoding"/>
-	<link rel="start" href="../CotEditorHelp.html"/>
-	<link rel="index" href="../xpgs/xall.html"/>
-	<link rel="stylesheet" href="../../Shared/sty/standard.css"/>
-	<title>Characters aren't displayed correctly</title>
-</head>
+  <body>
+    <nav>
+      <ul>
+        <li><a href="../CotEditorHelp.html">CotEditor Help</a></li>
+      </ul>
+    </nav>
 
-<body>
-<nav><ul>
-	<li><a href="../CotEditorHelp.html">CotEditor Help</a></li>
-</ul></nav>
+    <h1>Characters aren't displayed correctly</h1>
 
+    <p>
+      Characters can be garbled if CotEditor fails to detect the file's text
+      encoding correctly. In such cases, change the text encoding as described
+      below:
+    </p>
+    <ol>
+      <li>
+        Choose Format &gt; File Encoding, and select an encoding from the list.
+      </li>
+      <li>When a dialog appears, click Reinterpret.</li>
+    </ol>
+    <p><img src="../gfx/encodingWindow@2x.png" width="574" /></p>
+    <p>The behavior of each button in this dialog is as follows:</p>
+    <dl>
+      <dt>Cancel</dt>
+      <dd>Cancels the operation. The document is left unmodified.</dd>
+      <dt>Reinterpret</dt>
+      <dd>Reopens the file with the new encoding.</dd>
+      <dt>Convert</dt>
+      <dd>Converts the text from the current encoding to the new one.</dd>
+    </dl>
+    <ul>
+      <li>
+        You can also use the “File Encoding” toolbar item to change the text
+        encoding.
+      </li>
+      <li>
+        Changing the priority of auto-detection may help to reduce the
+        occurrences of garbled characters.<br />
+        =&gt;
+        <a href="../pgs/howto_customize_encoding_order.html"
+          >Setting the priority of encoding auto-detection</a
+        >
+      </li>
+      <li>
+        If you enable “Refer to encoding declaration in document” in the Format
+        preferences pane, in-document encoding declarations, such as
+        “<code>encoding=</code>” or “<code>@charset</code>,” will take
+        precedence when CotEditor detects the text encoding.<br />
+        =&gt;
+        <a href="../pgs/about_autodetect_charset.html"
+          >Using encoding declarations for auto-detection</a
+        >
+      </li>
+    </ul>
 
-<h1>Characters aren't displayed correctly</h1>
-
-<p>Characters can be garbled if CotEditor fails to detect the file's text encoding correctly. In such cases, change the text encoding as described below:</p>
-<ol>
-	<li>Choose Format &gt; File Encoding, and select an encoding from the list.</li>
-	<li>When a dialog appears, click Reinterpret.</li>
-</ol>
-<p><img src="../gfx/encodingWindow@2x.png" width="574"/></p>
-<p>The behavior of each button in this dialog is as follows:</p>
-<dl>
-	<dt>Cancel</dt>
-	<dd>Cancels the operation. The document is left unmodified.</dd>
-	<dt>Reinterpret</dt>
-	<dd>Reopens the file with the new encoding.</dd>
-	<dt>Convert</dt>
-	<dd>Converts the text from the current encoding to the new one.</dd>
-</dl>
-<ul>
-	<li>You can also use the “File Encoding” toolbar item to change the text encoding.</li>
-	<li>Changing the priority of auto-detection may help to reduce the occurrences of garbled characters.<br />
-	=&gt; <a href="../pgs/howto_customize_encoding_order.html">Setting the priority of encoding auto-detection</a></li>
-	<li>If you enable “Refer to encoding declaration in document” in the Format preferences pane, in-document encoding declarations, such as “<code>encoding=</code>” or “<code>@charset</code>,” will take precedence when CotEditor detects the text encoding.<br />
-	=&gt; <a href="../pgs/about_autodetect_charset.html">Using encoding declarations for auto-detection</a></li>
-</ul>
-
-
-<section id="cf">
-<h2>See also</h2>
-<ul>
-	<li><a href="../pgs/howto_customize_encoding_order.html">Setting the priority of encoding auto-detection</a></li>
-	<li><a href="../pgs/about_autodetect_charset.html">Using encoding declarations for auto-detection</a></li>
-	<li><a href="../pgs/about_shiftjis.html">What is the difference between the four kinds of Shift JIS?</a></li>
-</ul>
-</section>
-
-</body>
+    <section id="cf">
+      <h2>See also</h2>
+      <ul>
+        <li>
+          <a href="../pgs/howto_customize_encoding_order.html"
+            >Setting the priority of encoding auto-detection</a
+          >
+        </li>
+        <li>
+          <a href="../pgs/about_autodetect_charset.html"
+            >Using encoding declarations for auto-detection</a
+          >
+        </li>
+        <li>
+          <a href="../pgs/about_shiftjis.html"
+            >What is the difference between the four kinds of Shift JIS?</a
+          >
+        </li>
+      </ul>
+    </section>
+  </body>
 </html>
